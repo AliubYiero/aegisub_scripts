@@ -2,7 +2,7 @@ local tr = aegisub.gettext
 script_name = tr("actor2style")
 script_description = tr("辅助多人轴文本导入")
 script_author = "Yiero"
-script_version = "1.1.0"
+script_version = "1.1.2"
 
 -- 引用unicode库
 require('unicode')
@@ -113,6 +113,7 @@ re = function(subs, selected_lines)
 		for v in io.lines(f) do
 			table.insert(lines,v)
 			local c = 0
+			-- 搜索非UTF-8编码字符
 			for char in _G.unicode.chars(v) do
 				c = c + 1
 				if unicode.codepoint(char) < 0 then
@@ -121,7 +122,7 @@ re = function(subs, selected_lines)
 			end
 		end
 		
-		-- 判断
+		-- 输出错误信息（查询到非UTF-8编码字符）
 		if _v[1] then
 			aegisub.debug.out(table.concat(_v,"\n\n"))
 			return ""
