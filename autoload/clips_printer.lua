@@ -2,10 +2,19 @@ local tr = aegisub.gettext
 script_name = tr("clip_prints")
 script_description = tr("clips printer")
 script_author = "Yiero"
-script_version = "2.0.0"
+script_version = "2.2.0"
 
 include("karaskel.lua")
 require("unicode")
+
+--[[
+[history]:
+v1.0 能够读取文本并输出动态遮罩，支持行内标签 (an pos fsc fscx/fscy)
+v2.0.0 行内标签旋转(frz)和修改旋转中心的旋转(\org(*,*)\frz)也添加到支持
+v2.1.0 边框厚度(bord)和阴影距离(shad)的改变相应的会改变遮罩的位置
+v2.2.1 ① 支持绘图代码的动态遮罩; ②水平方向添加了左右各5像素的空白，使其在展开时不会过于紧凑
+--]]
+
 
 -- 修改原文件(慎用)
 function reself(line, replace, search)
@@ -44,7 +53,7 @@ clip_prints = function(subs, sel)
 		karaskel.preproc_line(subs, meta, styles, l)
 		
 		-- 报错(没有文本)
-		if l.text_stripped == "" then aegisub.debug.out("Error: Cannot match characters.\n"); aegisub.cancel() end
+		if l.text:gsub("%b{}","") == "" then aegisub.debug.out("Error: Cannot match characters.\n"); aegisub.cancel() end
 		
 		-- 定义变量
 		local x, y
@@ -59,7 +68,9 @@ clip_prints = function(subs, sel)
 		local clips_GUI, cp, cp_res
 		local btt
 		local tag
-		local angle, org 
+		local angle, org
+		local shadow, outline
+		local draws
 		
 		-- 获取缩放倍率fsc
 		scale_x, scale_y = 100, 100
@@ -96,17 +107,84 @@ clip_prints = function(subs, sel)
 			syln = unicode.len(l.text_stripped)
 		end
 		
+		-- 获取边框bord(outline)-- 获取边框bord(outline)
+		outline = {["x"] = l.styleref.outline, ["y"] = l.styleref.outline}
+		if l.text:match("\\bord%d") then 
+			outline.x = tonumber(l.text:match("\\bord(%d*)") )
+			outline.y = outline.x
+		elseif l.text:match("\\[xy]bord%d") then 
+			outline.x = tonumber(l.text:match("\\xbord(%d*)")) or l.styleref.outline
+			outline.y = tonumber(l.text:match("\\ybord(%d*)")) or l.styleref.outline
+		end		
+	
+		-- 获取阴影shad(shadow)
+		shadow = {["x"] = l.styleref.shadow, ["y"] = l.styleref.shadow}
+		if l.text:match("\\shad%d") then 
+			shadow.x = tonumber(l.text:match("\\shad(%d*)") )
+			shadow.y = shadow.x
+		elseif l.text:match("\\[xy]shad%d") then 
+			shadow.x = tonumber(l.text:match("\\xshad(%-?%d*)")) or l.styleref.shadow
+			shadow.y = tonumber(l.text:match("\\yshad(%-?%d*)")) or l.styleref.shadow
+		end
+		-- shadow.x = math.ceil(shadow.x)
+		-- shadow.y = math.ceil(shadow.y)
 		
+		
+		-- 计算绘图代码位置信息
+		local draw = {["x"]={}, ["y"]={}}
+		local draw_left, draw_right, draw_top, draw_bottom, draw_width, draw_height
+		local zero = {["x"]=0, ["y"]=0}
+		if l.text:match("\\p%d") then
+			local p
+		
+			draws = true
+			-- 抓取绘图代码的坐标
+			for v in l.text:gsub("%b{}", ""):gmatch("%-?%d*%.?%d*") do
+				if v ~= "" then 
+					v = tonumber(v)
+					if #draw.x <= #draw.y then table.insert(draw.x, v) 
+					else table.insert(draw.y, v) 
+					end
+				end
+			end
+			
+			-- 抓取绘图缩放指令
+			p = l.text:match("\\p(%d)")
+			
+			-- 抓取绘图代码的边界顶点
+			draw_left = math.min(table.unpack(draw.x)) * (scale_x/100) * (1/(2^(p-1)))
+			draw_right = math.max(table.unpack(draw.x)) * (scale_x/100) * (1/(2^(p-1)))
+			draw_bottom = math.max(table.unpack(draw.y)) * (scale_y/100) * (1/(2^(p-1)))
+			draw_top = math.min(table.unpack(draw.y)) * (scale_y/100) * (1/(2^(p-1)))
+			draw_width = draw_right - draw_left
+			draw_height = draw_bottom - draw_top
+		end
+		-- aegisub.debug.out(string.format("%d, %d ,%d, %d·", draw_left, draw_right, draw_top, draw_bottom))
+		
+		-- 添加一个x轴间隙
+		local space = 5
 		-- 计算缩放后x轴坐标
-		width = l.width + fsp*syln + (l.styleref.outline*2)
+		if draws then width = draw_width + (outline.x*2) + shadow.x + space*2
+		else width = l.width + fsp*syln + (outline.x*2) + shadow.x + space*2
+		end
 		-- 对齐方式1 4 7(x轴定位)
 		if align%3 == 1 then 
-			if poses then left = pos.x - l.styleref.outline
-			elseif an and not(poses) then left = (l.styleref.margin_l+l.margin_l) - l.styleref.outline
-			else left = l.left - l.styleref.outline
+			if poses then left = pos.x
+			elseif an and not(poses) then left = (l.styleref.margin_l+l.margin_l)
+			else left = l.left
+			end
+			-- 计算边框和阴影
+			left = left - outline.x - space
+			if shadow.x < 0 then left = left + shadow.x end
+			-- 计算其他赋值
+			right = left + width*(scale_x/100)
+			-- 绘图行零点重赋值
+			if draws then 
+				zero.x = left 
+				left = zero.x + draw_left
+				right = left + width
 			end
 			x = left
-			right = left + width*(scale_x/100)
 			center = (right+left)/2
 		-- 对齐方式2 5 8(x轴定位)
 		elseif align%3 == 2 then 
@@ -115,30 +193,61 @@ clip_prints = function(subs, sel)
 			elseif angles then 
 			else center = l.center
 			end
-			x = center
+			-- 计算其他赋值
 			left = center - (width*(scale_x/100))/2
 			right = center + (width*(scale_x/100))/2
+			-- 绘图行零点重赋值
+			if draws then 
+				zero.x = center - draw_width/2 
+				left = zero.x + draw_left - outline.x - space
+				if shadow.x < 0 then left = left + shadow.x end
+				right = left + width*(scale_x/100)
+				center = (right+left)/2
+			end
+			x = center
 		-- 对齐方式3 6 9(x轴定位)
 		elseif align%3 == 0 then
-			if poses then right = pos.x + l.styleref.outline
-			elseif an and not(poses) then right = meta.res_x - (l.styleref.margin_r+l.margin_r) + l.styleref.outline
-			else right = l.right + l.styleref.outline
+			if poses then right = pos.x
+			elseif an and not(poses) then right = meta.res_x - (l.styleref.margin_r+l.margin_r)
+			else right = l.right
+			end
+			-- 计算边框和阴影
+			right = right + outline.x
+			if shadow.x > 0 then right = right + shadow.x end
+			-- 计算其他赋值
+			left = right - width*(scale_x/100)
+			-- 绘图行零点重赋值
+			if draws then 
+				zero.x = right - draw_width
+				right = zero.x + draw_right + space
+				left = right - width
 			end
 			x = right
-			left = right - width*(scale_x/100)
 			center = (right+left)/2
 		end		
 		
 		-- 计算缩放后y轴坐标
-		height = l.height + (l.styleref.outline*2)
+		if draws then height = draw_height + (outline.y*2) + shadow.y + space*2
+		else height = l.height + (outline.y*2) + shadow.y
+		end
 		-- 对齐方式1 2 3(y轴定位)
 		if align <= 3 then 
-			if poses then bottom = pos.y + l.styleref.outline
-			elseif an and not(poses) then bottom = (meta.res_y-l.styleref.margin_v-l.margin_v) + l.styleref.outline
-			else bottom = l.bottom + l.styleref.outline
+			if poses then bottom = pos.y
+			elseif an and not(poses) then bottom = (meta.res_y-l.styleref.margin_v-l.margin_v)
+			else bottom = l.bottom
+			end
+			-- 计算边框和阴影
+			bottom = bottom + outline.y
+			if shadow.y > 0 then bottom = bottom + shadow.y end
+			-- 计算其他赋值
+			top = bottom - height*(scale_y/100)
+			-- 绘图行零点重赋值
+			if draws then 
+				zero.y = bottom - draw_height 
+				bottom = zero.y + draw_bottom + space*2
+				top = bottom - height
 			end
 			y = bottom
-			top = bottom - height*(scale_y/100)
 			middle = (bottom+top)/2
 		-- 对齐方式4 5 6(y轴定位)
 		elseif align <= 6 then 
@@ -146,21 +255,40 @@ clip_prints = function(subs, sel)
 			elseif an and not(poses) then middle = meta.res_y/2 
 			else middle = l.middle
 			end
-			y = middle
+			-- 计算其他赋值
 			top = middle - (height*(scale_y/100))/2
 			bottom = middle + (height*(scale_y/100))/2
+			-- 绘图行零点重赋值
+			if draws then 
+				zero.y = middle - height/2 
+				bottom = zero.y + draw_bottom + outline.y + space*2
+				if shadow.y > 0 then bottom = bottom + shadow.y end
+				top = bottom - height*(scale_y/100)
+				middle = (bottom+top)/2
+			end
+			y = middle
 		-- 对齐方式7 8 9(y轴定位)
 		elseif align <= 9 then 
-			if poses then top = pos.y - l.styleref.outline
-			elseif an and not(poses) then top = (l.styleref.margin_v+l.margin_v) - l.styleref.outline
-			else top = l.top - l.styleref.outline
+			if poses then top = pos.y
+			elseif an and not(poses) then top = (l.styleref.margin_v+l.margin_v)
+			else top = l.top
+			end
+			-- 计算边框和阴影
+			top = top - outline.y
+			if shadow.y < 0 then top = top + shadow.y end
+			-- 计算其他赋值
+			bottom = top + height*(scale_y/100)
+			-- 绘图行零点重赋值
+			if draws then 
+				zero.y = top 
+				top = zero.y + draw_top - space
+				bottom = top + height
 			end
 			y = top
-			bottom = top + height*(scale_y/100)
 			middle = (bottom+top)/2
 		end	
-
-
+		
+		
 		-- 获取旋转角度frz和旋转中心org
 		angle = l.styleref.angle
 		org = {["x"]=x, ["y"]=y}
@@ -233,7 +361,7 @@ clip_prints = function(subs, sel)
 			{x=2, y=0, class="checkbox", label="清除遮罩标签", value=true, name="clean", hint="勾选后将会清除原有的遮罩标签(包括含遮罩标签的t标签)"},
 			{x=1, y=1, class="label", label="遮罩标签："}, {x=2, y=1, class="dropdown", name="tags", value="clip", items={"clip", "iclip"}, hint="选择输出的遮罩标签"},
 			{x=1, y=2, class="label", label="开始时间："}, {x=2, y=2, class="intedit", name="start_time", value=0, min=0, max=l.duration, hint="修改动态遮罩开始的时间(默认为0)"},
-			{x=1, y=3, class="label", label="持续时间："}, {x=2, y=3, class="intedit", name="duration", value=l.duration, min=0, max=l.duration, hint="修改动态遮罩的持续时间(默认行持续时间)\n在说话人栏输入数字能快捷输出(关闭GUI后)"},
+			{x=1, y=3, class="label", label="持续时间："}, {x=2, y=3, class="intedit", name="duration", value=l.duration, min=0, max=l.duration, hint="修改动态遮罩的持续时间(默认行持续时间)\n在说话人栏输入数字能快捷输出(关闭GUI后)\nPS.若遮罩显示不全(通过跳帧的方式查看)，极大概率最后一帧没有显示而不是遮罩没罩全，请调整持续时间再作查看"},
 			{x=1, y=4, class="label", label="加速度："},   {x=2, y=4, class="floatedit", name="acc", value=1.0, hint="修改动态遮罩的过渡的加速度(也就是\t的加速度)"},
 			{x=1, y=5, class="label", label="过渡方向："}, {x=2, y=5, class="dropdown", name="way", value="从左到右", items={"从左到右",  "从上到下", "从右到左", "从下到上", "从中间向两端(竖直)", "从中间向两端(水平)"}, hint="修改动态遮罩展开的方向"},
 		}
