@@ -2,7 +2,7 @@ local tr = aegisub.gettext
 script_name = tr("clip_prints")
 script_description = tr("clips printer")
 script_author = "Yiero"
-script_version = "2.2.0"
+script_version = "2.2.1"
 
 include("karaskel.lua")
 require("unicode")
