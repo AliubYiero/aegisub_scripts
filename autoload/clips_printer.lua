@@ -107,7 +107,7 @@ clip_prints = function(subs, sel)
 			syln = unicode.len(l.text_stripped)
 		end
 		
-		-- 获取边框bord(outline)-- 获取边框bord(outline)
+		-- 获取边框bord(outline)
 		outline = {["x"] = l.styleref.outline, ["y"] = l.styleref.outline}
 		if l.text:match("\\bord%d") then 
 			outline.x = tonumber(l.text:match("\\bord(%d*)") )
@@ -126,9 +126,6 @@ clip_prints = function(subs, sel)
 			shadow.x = tonumber(l.text:match("\\xshad(%-?%d*)")) or l.styleref.shadow
 			shadow.y = tonumber(l.text:match("\\yshad(%-?%d*)")) or l.styleref.shadow
 		end
-		-- shadow.x = math.ceil(shadow.x)
-		-- shadow.y = math.ceil(shadow.y)
-		
 		
 		-- 计算绘图代码位置信息
 		local draw = {["x"]={}, ["y"]={}}
