@@ -170,8 +170,9 @@ re = function(subs, selected_lines)
 		end
 		
 		-- 重定向标识符
-		reself(nil, string.format('value="#", name="comment"',txt_res.comment), 'value="#", name="comment"')
-		reself(nil, string.format('value="：", name="actor"',txt_res.actor), 'value="：", name="actor"')
+		local _l = 100
+		reself(_l, string.format('value="#", name="comment"',txt_res.comment), 'value=".-", name="comment"')
+		reself(_l+2, string.format('value="：", name="actor"',txt_res.actor), 'value=".-", name="actor"')
 	end
 	return ""
 end
