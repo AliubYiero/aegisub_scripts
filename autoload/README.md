@@ -22,7 +22,15 @@
 
 
 
-## clips_printer
+### effect_tags
+
+**v1.0.0**
+
+- 将**动态遮罩**`clips_printer`整合进该插件，添加功能**多重边框**`multi_bord`
+
+
+
+## ~~clips_printer~~
 
 **v1.0.0** 
 
