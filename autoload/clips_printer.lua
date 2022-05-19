@@ -2,46 +2,93 @@ local tr = aegisub.gettext
 script_name = tr("clip_prints")
 script_description = tr("clips printer")
 script_author = "Yiero"
-script_version = "2.2.1"
+script_version = "2.3.0"
 
 include("karaskel.lua")
 require("unicode")
 
 --[[
 [history]:
-v1.0 能够读取文本并输出动态遮罩，支持行内标签 (an pos fsc fscx/fscy)
+v1.0.0 能够读取文本并输出动态遮罩，支持行内标签 (an pos fsc fscx/fscy)
 v2.0.0 行内标签旋转(frz)和修改旋转中心的旋转(\org(*,*)\frz)也添加到支持
 v2.1.0 边框厚度(bord)和阴影距离(shad)的改变相应的会改变遮罩的位置
 v2.2.1 ① 支持绘图代码的动态遮罩; ②水平方向添加了左右各5像素的空白，使其在展开时不会过于紧凑
+v2.3.0 添加一个通用配置文件
 --]]
 
-
--- 修改原文件(慎用)
-function reself(line, replace, search)
-	-- 读取本文件
-	file = string.format("%s\\automation\\autoload\\clips_printer.lua",aegisub.decode_path("?data"))
-
-	-- 读取本文件
+-- 浏览文件获取其行表
+viewfiles = function(path)
+	-- 读取行
 	local lines = {}
-	for v in io.lines(file) do
-		table.insert(lines,v)
+	-- 以追加更新模式读取文件（若没有文件，则新建文件）
+	for v in io.open(path,"a+"):lines() do
+		lines[#lines+1] = v
 	end
-	
-	-- 搜索替换项
-	if line then
-		line = math.min(line,#lines+1)
-		search = search or ".*"
-		lines[line] = lines[line]:gsub(search,replace)
-	else
-		for k,v in ipairs(lines) do
-			lines[k] = v:gsub(search,replace)
-		end
-	end
-	
-	io.open(file,"w+"):write(table.concat(lines,"\n"))
-	return ""
+	return lines
 end
 
+-- 读取/修改配置信息
+function load_cfg(script_name, key, input, Default)
+	-- 加载配置文件路径
+	local file_path
+	file_path = string.format("%s\\automation\\include\\Yuint_config.lua", aegisub.decode_path("?data"))
+
+	-- 读取文件
+	local lines
+	lines = viewfiles(file_path)
+	
+	-- 初始化文件
+	file = io.open(file_path, "w+")
+	if not(lines[1]) then lines[1] = "Yuint_config = {}"; lines[2] = "return Yuint_config" end
+
+	-- 遍历至配置信息
+	local save, line
+	local i = 1
+	while i < #lines do
+		if lines[i]:match(script_name) then 
+			while lines[i] ~= "}" do
+				save = lines[i]:match(string.format('%s = "(.-)",', key))
+				line = i
+				if save then break end
+				i=i+1
+			end
+			break
+		end
+		i=i+1
+	end
+	-- 无配置信息输出
+	if i == #lines then 
+		table.insert(lines, #lines, string.format("Yuint_config.%s = {", script_name))
+		table.insert(lines, #lines, string.format('\t%s = "%s",', key, Default))
+		table.insert(lines, #lines, string.format("}"))
+	elseif not(save) then
+		table.insert(lines, i, string.format('\t%s = "%s",', key, Default))
+		save = Default
+		line = i
+	end
+	
+	-- 布尔值重赋值
+	if save == "true" then save = true
+	elseif save == "false" then save = false
+	end
+	
+	-- 判断输入or输出
+	-- 输出
+	if input == nil then 
+		file:write(table.concat(lines,"\n"))
+		file:close()
+		return save
+		
+	-- 输入
+	else
+		if input ~= save then lines[line] = string.format('\t%s = "%s",', key, input) end
+		file:write(table.concat(lines,"\n"))
+		file:close()
+		return ""
+	end
+end
+
+-- 动态遮罩主函数
 clip_prints = function(subs, sel)
 	-- 读取字幕文件
 	meta, styles = karaskel.collect_head(subs, false)
@@ -353,9 +400,12 @@ clip_prints = function(subs, sel)
 
 		---------------------- 用户输入	
 		-- 创建GUI
+		local cfg_GUI, cfg_clean
+		cfg_GUI = load_cfg("clips_printer", "GUI", nil, true)
+		cfg_clean = load_cfg("clips_printer", "clean", nil, true)
 		clips_GUI = {
-			{x=1, y=0, class="checkbox", label="启用GUI", name="GUI", value=true, hint="取消勾选后，再次使用本插件将会直接输出标签，而不会打开GUI(需重载一遍自动化)\n关闭GUI后在说话人栏输入数字即可修改持续时间(默认从左到右展开)\n在说话人栏输入\"GUI on\"，能够重新进入GUI界面"},
-			{x=2, y=0, class="checkbox", label="清除遮罩标签", value=true, name="clean", hint="勾选后将会清除原有的遮罩标签(包括含遮罩标签的t标签)"},
+			{x=1, y=0, class="checkbox", label="启用GUI", name="GUI", value=cfg_GUI, hint="取消勾选后，再次使用本插件将会直接输出标签，而不会打开GUI(需重载一遍自动化)\n关闭GUI后在说话人栏输入数字即可修改持续时间(默认从左到右展开)\n在说话人栏输入\"GUI on\"，能够重新进入GUI界面"},
+			{x=2, y=0, class="checkbox", label="清除遮罩标签", name="clean", value=cfg_clean, hint="勾选后将会清除原有的遮罩标签(包括含遮罩标签的t标签)"},
 			{x=1, y=1, class="label", label="遮罩标签："}, {x=2, y=1, class="dropdown", name="tags", value="clip", items={"clip", "iclip"}, hint="选择输出的遮罩标签"},
 			{x=1, y=2, class="label", label="开始时间："}, {x=2, y=2, class="intedit", name="start_time", value=0, min=0, max=l.duration, hint="修改动态遮罩开始的时间(默认为0)"},
 			{x=1, y=3, class="label", label="持续时间："}, {x=2, y=3, class="intedit", name="duration", value=l.duration, min=0, max=l.duration, hint="修改动态遮罩的持续时间(默认行持续时间)\n在说话人栏输入数字能快捷输出(关闭GUI后)\nPS.若遮罩显示不全(通过跳帧的方式查看)，极大概率最后一帧没有显示而不是遮罩没罩全，请调整持续时间再作查看"},
@@ -368,7 +418,7 @@ clip_prints = function(subs, sel)
 			btt = true
 			l.actor = ""
 		elseif l.actor == "GUI off" then 
-			clips_GUI[1].value = false
+			cfg_GUI = false
 			l.actor = ""
 		elseif tonumber(l.actor) then 
 			duration = math.min(l.duration, tonumber(l.actor))
@@ -376,7 +426,7 @@ clip_prints = function(subs, sel)
 		end
 		
 		-- 判断GUI是否启用
-		if not(btt) and not(clips_GUI[1].value) then 
+		if not(btt) and not(cfg_GUI) then 
 			cp = "Apply"
 			cp_res = {
 				["tags"] = "clip",
@@ -394,9 +444,6 @@ clip_prints = function(subs, sel)
 		
 		-- 选项[取消]
 		if cp == "Cancel" then aegisub.cancel() end
-		
-		-- GUI关闭跳转
-		::GUI::
 		
 		-- 选项[确认]
 		if cp == "Apply" then 
@@ -457,9 +504,8 @@ clip_prints = function(subs, sel)
 			end
 		
 			-- 修改GUI选项
-			if cp_res.GUI ~= clips_GUI[1].value then 
-				reself(nil, string.format('label="启用GUI", name="GUI", value=%s,', cp_res.GUI), 'label="启用GUI", name="GUI", value=%w-,') 
-			end
+			load_cfg("clips_printer", "GUI", cp_res.GUI)
+			load_cfg("clips_printer", "clean", cp_res.clean)
 		end	
 		
 		subs[i] = l
