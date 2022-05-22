@@ -23,12 +23,12 @@
 - clips_printer - 动态遮罩过渡
 - multi_bord - 多重边框
 
-#### clips_printer - 动态遮罩过渡
+###### clips_printer - 动态遮罩过渡
 
 快速输出一个包括整个字幕行的动态遮罩。可选择动态出现(`clip`)或动态消失(`iclip`)，包含6种展开方向
 
 兼容行内标签(`an` `pos` `fsc` `fscx` `fscy` `org` `frz`)
 
-#### multi_bord - 多重边框
+###### multi_bord - 多重边框
 
 快速输出具有多行边框的字幕行
