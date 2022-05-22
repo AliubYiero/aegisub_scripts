@@ -2,7 +2,7 @@ local tr = aegisub.gettext
 script_name = tr("effect_tags")
 script_description = tr("help tags")
 script_author = "Yiero"
-script_version = "1.0.0"
+script_version = "1.0.1"
 
 include("karaskel.lua")
 
@@ -546,41 +546,57 @@ multi_bord = function(subs, sel)
 	
 	-- 收集头数据
 	meta, styles = karaskel.collect_head(subs, false)
-	for _, k in ipairs(sel) do
-		local l = subs[k]
-		
-		-- 处理行信息
-		karaskel.preproc_line(subs, meta, styles, l)
-		
-		-- 创建一级GUI(输入边框层数)
-		local bord_GUI, bd, bd_res
+
+	-- 收集未注释对话行
+	local sel_dialines = {}
+	for i=1, #subs do 
+		if subs[i].class == "dialogue" and not(subs[i].comment) then 
+			table.insert(sel_dialines, i) 
+		end 
+	end
+	
+	-- 创建GUi
+	local l = subs[sel_dialines[1]]
+	-- 处理行信息
+	karaskel.preproc_line(subs, meta, styles, l)
+	
+	-- 创建一级GUI(输入边框层数)
+	local bord_GUI, bd, bd_res
+	local bord_n, sel_lines
+	bord_GUI = {
+		{x=1, y=0, class="label", label="选择行："}, {x=2, y=0, class="dropdown", name="sel_lines", value="所选行", items={"所选行", "全选行"}}, 
+		{x=1, y=1, class="label", label="边框层数："}, {x=2, y=1, class="intedit", name="bord_n", value=1} 
+	}
+	bd, bd_res = aegisub.dialog.display(bord_GUI, {"Apply", "Cancel"}, {save="Apply", cancel="Cancel"})
+	bord_n = bd_res.bord_n
+	sel_lines = bd_res.sel_lines
+	
+	if bd == "Cancel" then aegisub.cancel() 
+	elseif bd == "Apply" then 
+		-- 创建二级GUI（输入颜色）
 		bord_GUI = {
-			{x=1, y=0, class="label", label="边框层数："}, {x=2, y=0, class="intedit", name="bord_n", value=1} 
+			{x=1, y=0, class="label", label="主颜色"}, {x=2, y=0, class="label", label=""}, {x=3, y=0, class="color", value=l.styleref.color1, name="ass", hint="通过颜色管理器选择颜色"}, {x=4, y=0, class="edit", value=ass_to_rgb(l.styleref.color1), name="rgb", hint="输入RGB颜色选择颜色\n注：优先选择RGB颜色"}, 
+			{x=1, y=1, class="label", label="边框层数"}, {x=2, y=1, class="label", label="边框厚度"}, {x=3, y=1, class="label", label="选择颜色(ASS)"}, {x=4, y=1, class="label", label="选择颜色(R,G,B)"}, 
 		}
-		bd, bd_res = aegisub.dialog.display(bord_GUI, {"Apply", "Cancel"}, {save="Apply", cancel="Cancel"})
-		local bord_n = bd_res.bord_n
+		-- 迭代边框
+		for i = 1, bord_n do 
+			table.insert(bord_GUI, {x=1, y=i+1, class="label", label=string.format("[#%d]边框", i)})
+			table.insert(bord_GUI, {x=2, y=i+1, class="edit", value=l.styleref.outline, name=string.format("bord%d", i), hint="边框层数从里到外"})
+			table.insert(bord_GUI, {x=3, y=i+1, class="color", value=l.styleref.color3, name=string.format("ass%d", i), hint="通过颜色管理器选择颜色"})
+			table.insert(bord_GUI, {x=4, y=i+1, class="edit", value="", name=string.format("rgb%d", i), hint="输入RGB颜色选择颜色\n注：优先选择RGB颜色"})
+		end
 		
+		bd, bd_res = aegisub.dialog.display(bord_GUI, {"Apply", "Cancel"}, {save="Apply", cancel="Cancel"})
+			
 		if bd == "Cancel" then aegisub.cancel()
 		elseif bd == "Apply" then 
-			-- 创建二级GUI（输入颜色）
-			bord_GUI = {
-				{x=1, y=0, class="label", label="主颜色"}, {x=2, y=0, class="label", label=""}, {x=3, y=0, class="color", value=l.styleref.color1, name="ass", hint="通过颜色管理器选择颜色"}, {x=4, y=0, class="edit", value=ass_to_rgb(l.styleref.color1), name="rgb", hint="输入RGB颜色选择颜色\n注：优先选择RGB颜色"}, 
-				{x=1, y=1, class="label", label="边框层数"}, {x=2, y=1, class="label", label="边框厚度"}, {x=3, y=1, class="label", label="选择颜色(ASS)"}, {x=4, y=1, class="label", label="选择颜色(R,G,B)"}, 
-			}
-			-- 迭代边框
-			for i = 1, bord_n do 
-				table.insert(bord_GUI, {x=1, y=i+1, class="label", label=string.format("[#%d]边框", i)})
-				table.insert(bord_GUI, {x=2, y=i+1, class="edit", value=l.styleref.outline, name=string.format("bord%d", i), hint="边框层数从里到外"})
-				table.insert(bord_GUI, {x=3, y=i+1, class="color", value=l.styleref.color3, name=string.format("ass%d", i), hint="通过颜色管理器选择颜色"})
-				table.insert(bord_GUI, {x=4, y=i+1, class="edit", value="", name=string.format("rgb%d", i), hint="输入RGB颜色选择颜色\n注：优先选择RGB颜色"})
-			end
+			util = require("aegisub.util")
 			
-			bd, bd_res = aegisub.dialog.display(bord_GUI, {"Apply", "Cancel"}, {save="Apply", cancel="Cancel"})
-			
-			if bd == "Cancel" then aegisub.cancel()
-			elseif bd == "Apply" then 
-				util = require("aegisub.util")
-				
+			if sel_lines == "全选行" then sel = sel_dialines end
+			for u=1, #sel do
+				local k = sel[u]+(u-1)*(bord_n-1)
+				l = subs[k]
+				karaskel.preproc_line(subs, meta, styles, l)
 				-- 导入主颜色数据
 				local main_color
 				if bd_res.rgb ~= ass_to_rgb(l.styleref.color1) then main_color = util.ass_color(match_rgb(bd_res.rgb))
@@ -614,12 +630,10 @@ multi_bord = function(subs, sel)
 					
 					subs[k+(i-1)] = l
 				end
-				break
 			end
 		end
-		
 	end
-end
+end		
 
 
 aegisub.register_macro(script_name.."/clip_prints", script_description, clip_prints)
