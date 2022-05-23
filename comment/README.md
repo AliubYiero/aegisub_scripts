@@ -68,7 +68,18 @@ aegisub显示乱码的字符，使用 `unicode.chars()` 遍历到的码点属于
 
 `select_lines`其实是一个记录了选中行行编号的数表，它本身不记录行数据，这是一个比较容易被忽略的点，虽然很经常用到。所以我们需要用`for _, i do ipirs(select_lines) do l = subs[i] end` 遍历`select_lines`，用`for i, v do ipirs(subs) do l = subs[i] end`遍历`subs`。
 
-那么相应的，`select_lines`也可以用数值型for`（for i=1, #n do end）`去遍历。
+那么相应的，`select_lines`也可以用**数值型for**`（for i=1, #n do end）`去遍历。
+
+而使用数值型for有什么作用呢？可以通过这样一个内置的迭代器去迭代循环数`i`，从而辅助计算。比如`multi_bord`的插入行就是通过数值型for去执行的。它也能用来重复行。
+
+```lua
+n = 1
+for i=1, #sel do
+  k = sel[i]+(i-1)*n
+  l = subs[k]
+  for i=2,n do subs.insert(k, l) end
+end
+```
 
 
 
