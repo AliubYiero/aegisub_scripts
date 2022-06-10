@@ -4,9 +4,9 @@
 
 | list           | 功能                                                         |
 | -------------- | ------------------------------------------------------------ |
-| actor_to_style | [文本导入辅助](###actor_to_style - 多人轴说话人文本导入辅助) |
-| effect_tags    | [后期相关插件集](###effect_tags - 后期相关插件集)            |
-| shape_rewrite  | [图形转写](###shape_rewrite - 图形转写)                      |
+| actor_to_style | [文本导入辅助](###actor_to_style---多人轴说话人文本导入辅助) |
+| effect_tags    | [后期相关插件集](###effect_tags---后期相关插件集)            |
+| shape_rewrite  | [图形转写](###shape_rewrite---图形转写)                      |
 
 
 
