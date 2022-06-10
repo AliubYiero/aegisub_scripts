@@ -2,11 +2,11 @@
 
 插件的更新日志，插件的功能在前面的目录
 
-| list           | 功能                                     | 更新日志                           |
-| -------------- | ---------------------------------------- | ---------------------------------- |
-| actor_to_style | [多人轴说话人文本导入辅助](../README.md) | [actor_to_style](##actor_to_style) |
-| effect_tags    | [后期相关插件集](../README.md)           | [effect_tags](##effect_tags)       |
-| shape_rewrite  | [图形转写](../README.md)                 | [shape_rewrite](##shape_rewrite)   |
+| list           | 功能                                     | 更新日志                          |
+| -------------- | ---------------------------------------- | --------------------------------- |
+| actor_to_style | [多人轴说话人文本导入辅助](../README.md) | [actor_to_style](#actor_to_style) |
+| effect_tags    | [后期相关插件集](../README.md)           | [effect_tags](#effect_tags)       |
+| shape_rewrite  | [图形转写](../README.md)                 | [shape_rewrite](#shape_rewrite)   |
 
 
 
