@@ -8,7 +8,7 @@
 | effect_tags    | [后期相关插件集](#effect_tags---后期相关插件集)            | [Download](./autoload/effect_tags.lua)    |
 | shape_rewrite  | [图形转写](#shape_rewrite---图形转写)                      | [Download](./autoload/shape_rewrite.lua)  |
 
-> 如果不会下载/没有插件辅助, 请点击本页面右上角 `[Code]` - `[Download Zip]` 将所有文件拷贝下来之后在选择需要的插件安装.
+> 如果不会下载/没有插件辅助, 请点击本页面右上角 `[Code]` - `[Download Zip]` 将所有文件拷贝下来之后再选择需要的插件安装.
 
 
 
