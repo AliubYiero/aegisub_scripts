@@ -2,7 +2,7 @@ local tr = aegisub.gettext
 script_name = tr("shape_rewrite")
 script_description = tr("将矢量/标准clip转写成绘图形式, 方便快捷绘图")
 script_author = "Yiero"
-script_version = "1.0"
+script_version = "1.0.1"
 
 -- 抓取所有坐标点
 function get_shape(s)
@@ -19,7 +19,7 @@ function get_shape(s)
 		table.insert(pos.x, pos[i])
 		table.insert(pos.y, pos[i+1])
 	end
-	return pos
+	return pos, s
 end
 
 
@@ -40,7 +40,7 @@ end
 -- 将矢量图形移位至坐标原点
 function replace_shape_position(s)
 	-- 获取图形顶点坐标
-	local pos = get_shape(s)
+	local pos, s = get_shape(s)
 	local left, right, top, bottom
 	left, right, top, bottom = get_shape_bounding(s)
 	
@@ -86,7 +86,7 @@ shape_rewrite = function(subs,selected_lines)
 		end
 		
 		-- 记录图形/转写绘图代码
-		left, right, top, bottom = get_shape_bounding(clips)
+		left, right, top, bottom = get_shape_bounding(clips) 
 		l.text = l.text:gsub("{", string.format("{\\p1\\an7\\bord0\\shad0\\pos(%d, %d)", left, top)):
 					gsub("$", replace_shape_position(clips))
 		
@@ -95,11 +95,3 @@ shape_rewrite = function(subs,selected_lines)
 end
 
 aegisub.register_macro(script_name, script_description, shape_rewrite)
-
-
-
-
-
-
-
-
