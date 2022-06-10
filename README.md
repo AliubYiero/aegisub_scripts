@@ -2,11 +2,11 @@
 
 一些aegisub小插件
 
-| list           | 功能                                                       |
-| -------------- | ---------------------------------------------------------- |
-| actor_to_style | [文本导入辅助](#actor_to_style---多人轴说话人文本导入辅助) |
-| effect_tags    | [后期相关插件集](#effect_tags---后期相关插件集)            |
-| shape_rewrite  | [图形转写](#shape_rewrite---图形转写)                      |
+| list           | 功能                                                       | 下载                                      |
+| -------------- | ---------------------------------------------------------- | ----------------------------------------- |
+| actor_to_style | [文本导入辅助](#actor_to_style---多人轴说话人文本导入辅助) | [Download](./autoload/actor_to_style.lua) |
+| effect_tags    | [后期相关插件集](#effect_tags---后期相关插件集)            | [Download](./autoload/effect_tags.lua)    |
+| shape_rewrite  | [图形转写](#shape_rewrite---图形转写)                      | [Download](./autoload/shape_rewrite.lua)  |
 
 
 
