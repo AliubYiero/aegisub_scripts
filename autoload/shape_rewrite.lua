@@ -2,7 +2,7 @@ local tr = aegisub.gettext
 script_name = tr("shape_rewrite")
 script_description = tr("将矢量/标准clip转写成绘图形式, 方便快捷绘图")
 script_author = "Yiero"
-script_version = "1.0.1"
+script_version = "1.0.2"
 
 -- 抓取所有坐标点
 function get_shape(s)
@@ -71,7 +71,10 @@ shape_rewrite = function(subs,selected_lines)
 		l.text = l.text:gsub("\\clip%b()", ""):
 				gsub("\\p%d", ""):
 				gsub("\\an%d", ""):
-				gsub("\\pos%b()", "")
+				gsub("\\shad%d*%.?%d+", ""):
+				gsub("\\bord%d*%.?%d+", ""):
+				gsub("\\pos%b()", ""):
+				gsub("}m %d.*", "}")
 		
 		-- 矩形clip绘图
 		local left, right, top, bottom
