@@ -14,7 +14,7 @@
 
 | include      | 功能                    | 版本  | 说明文档                                  |
 | ------------ | ----------------------- | ----- | ----------------------------------------- |
-| GUI_generate | 用于辅助GUI生成的函数库 | 1.2.3 | [[README]](./docx/GUI_generate/README.md) |
+| GUI_generate | 用于辅助GUI生成的函数库 | 1.3.4 | [[README]](./docx/GUI_generate/README.md) |
 
 
 
