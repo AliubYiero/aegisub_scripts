@@ -1,5 +1,5 @@
 local tr = aegisub.gettext
-local script_name = tr("Append Style With Leading")
+local script_name = tr("Append Style to Text")
 local script_description = tr("append style name to text and leading the style text will not use the space of the origin text.")
 local script_author = "Yiero"
 local script_version = "1.2.3"
