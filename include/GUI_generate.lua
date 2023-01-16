@@ -1,6 +1,5 @@
 -- @author: Yiero
--- @version: 1.3.4
--- @duplicate "D:\aliubyiero\github\aegisub_scripts\include\GUI_generate.lua"
+-- @version: 1.3.5
 --[[
    @description:
  GUI_generate是一个用于Aegisub插件GUI创建的函数库，提供了3个辅助函数：
@@ -413,7 +412,7 @@ GUI.display = function(GUI_configs, btns, is_config)
 	btns = btns or {"OK", "Cancel"}
 
 	-- configs输出标记添加button
-	if is_config ~= false and GUI_configs[1].is_generate then
+	if (is_config ~= false and GUI_configs[1].is_generate) or is_config == true then
 		GUI_configs[1].is_generate = false
 		btns[#btns + 1] = "Config"
 	end
