@@ -1,5 +1,6 @@
 -- @author: Yiero
--- @version: 1.3.3
+-- @version: 1.3.4
+-- @duplicate "D:\aliubyiero\github\aegisub_scripts\include\GUI_generate.lua"
 --[[
    @description:
  GUI_generate是一个用于Aegisub插件GUI创建的函数库，提供了3个辅助函数：
@@ -307,8 +308,13 @@ local GUI = {
 					error(string.format('Error Input in (%d, %d): `^` should not be here.', x, y))
 				end
 
+				-- 处理label文本
+				if class == "l" or class == "label" then
+					cell.label = label
+					cell.class = "label"
+					goto continue
+				end
 
-                -- 处理label文本
 				cell.label = class .. label
 				cell.class = "label"
 				if label == "" then
