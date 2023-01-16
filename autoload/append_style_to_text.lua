@@ -2,12 +2,12 @@ local tr = aegisub.gettext
 local script_name = tr("Append Style to Text")
 local script_description = tr("append style name to text and leading the style text will not use the space of the origin text.")
 local script_author = "Yiero"
-local script_version = "1.2.3"
+local script_version = "1.2.4"
 
 require 'karaskel'
 local GUI = require 'GUI_generate'
 
--- 重写`karaskel.preproc_line_pos`优化性能
+---[[ 重写`karaskel.preproc_line_pos`优化性能
 function karaskel.preproc_line_pos(meta, styles, line)
 	line.styleref = line.styleref or styles[line.style]
 
@@ -154,6 +154,7 @@ function karaskel.preproc_line_pos(meta, styles, line)
 	line.hcenter = line.center
 	line.vcenter = line.middle
 end
+--]]
 
 -- 删除附加字幕行，还原字幕
 local function delete_append(subs)
@@ -235,7 +236,7 @@ display.GUI_prev_style_string = function(subs)
 	]]
 
 	local prev_style_string
-	-- local btn, return_list = GUI.display(GUI.generate("GUI_prev_style_string"), {"OK", "Delete Append", "Cancel"})
+	-- local btn, return_list = GUI.display(GUI.generate("GUI-append_style_with_leading-prev_style_string"), {"OK", "Delete Append", "Cancel"})
 	local btn, return_list = GUI.display(GUI.generate(GUI_prev_style_string), {"OK", "Delete Append", "Cancel"})
 	if btn == "Delete Append" then
 		delete_append(subs)
@@ -255,10 +256,10 @@ display.GUI_style_chosen = function(styles)
 | 选择添加前后缀的样式                    |                                                                                                                                                  | ： |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | -- |
 | 注释样式：                              | [is_comment]d<注释>{注释样式将直接被忽略，右边的单选项仅是不显示，但是还会参与重叠冲突计算；如果您使用了多个样式进行注释，请点击 `Extra`按钮}: |    |
-| c<1>{取消后仅应用于选择行}:应用到所有行 |
+| c<1>{取消后仅应用于选择行}:应用到所有行 | | |
 	]]
 
-	-- local GUI_style_chosen = GUI.generate("GUI_style_chosen")
+	-- local GUI_style_chosen = GUI.generate("GUI-append_style_with_leading-style_chosen")
 	local GUI_style_chosen = GUI.generate(GUI_style_chosen)
 	display.inset_styles(GUI_style_chosen, styles, 5, 0, true)
 
@@ -268,7 +269,13 @@ display.GUI_style_chosen = function(styles)
 		local style = styles[style_i]
 		table.insert(style_names, style.name)
 	end
-	GUI_style_chosen[5].items = style_names
+
+	for i, v in ipairs(GUI_style_chosen) do
+		if v.class == "dropdown" then
+			GUI_style_chosen[i].items = style_names
+			break
+		end
+	end
 
 	local btn, return_list = GUI.display(GUI_style_chosen, {"OK", "Extra", "Cancel"})
 
