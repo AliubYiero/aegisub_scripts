@@ -153,7 +153,7 @@ local GUI_configs = GUI.generate("D:/GUI_test.md")
 
 - `GUI_configs`：GUI配置文件表，详细数据见[[Dialog Control table format]](https://aegi.vmoe.info/docs/3.2/Automation/Lua/Dialogs/#dialog-control-table-format)
 - `btns`：[可选参数] GUI按钮，默认为`{"OK", "Cancel"}`，详细数据见[[Aegisub Dialog Display]](https://aegi.vmoe.info/docs/3.2/Automation/Lua/Dialogs/#aegisubdialogdisplay)
-- `is_config`：[可选参数] 输入`false`可以关闭文件传入时默认的`Config`按钮
+- `is_config`：[可选参数] 输入`false`可以关闭文件传入时默认的`Config`按钮，输入`true`可开启`Config`按钮
 
 
 
@@ -202,6 +202,8 @@ local GUI_configs = GUI.generate("D:/GUI_test.md")
 
 
 ## 更新日志
+
+> v1.3.5 | 更新了`is_config`参数的值，现在可以由用户开启`Config`按钮
 
 > v1.3.2 | `GUI.display(GUI_configs, btns, is_config)`添加了一个参数`is_config`，用于关闭文件输入时默认添加的`Config`按钮
 
