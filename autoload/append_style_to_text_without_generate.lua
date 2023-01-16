@@ -2,7 +2,7 @@ local tr = aegisub.gettext
 local script_name = tr("Append Style to Text")
 local script_description = tr("append style name to text and leading the style text will not use the space of the origin text.(without GUI Generate Library)")
 local script_author = "Yiero"
-local script_version = "1.2.3"
+local script_version = "1.2.4"
 
 require 'karaskel'
 
@@ -301,7 +301,12 @@ display.GUI_style_chosen = function(styles)
 		local style = styles[style_i]
 		table.insert(style_names, style.name)
 	end
-	GUI_style_chosen[4].items = style_names
+	for i, v in ipairs(GUI_style_chosen) do
+		if v.class == "dropdown" then
+			GUI_style_chosen[i].items = style_names
+			break
+		end
+	end
 
 	local btn, return_list = GUI.display(GUI_style_chosen, {"OK", "Extra", "Cancel"})
 
