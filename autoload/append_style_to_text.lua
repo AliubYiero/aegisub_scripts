@@ -2,7 +2,7 @@ local tr = aegisub.gettext
 local script_name = tr("Append Style to Text")
 local script_description = tr("append style name to text and leading the style text will not use the space of the origin text.")
 local script_author = "Yiero"
-local script_version = "1.2.4"
+local script_version = "1.2.5"
 
 require 'karaskel'
 local GUI = require 'GUI_generate'
@@ -264,7 +264,7 @@ display.GUI_style_chosen = function(styles)
 	display.inset_styles(GUI_style_chosen, styles, 5, 0, true)
 
 	-- 忽略样式
-	local style_names = {}
+	local style_names = {""}
 	for style_i = 1, styles.n do
 		local style = styles[style_i]
 		table.insert(style_names, style.name)
