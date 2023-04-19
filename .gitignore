@@ -1,0 +1,21 @@
+# Editor directories and files
+.idea
+.vscode
+
+
+/v4-docs
+/tests
+/src
+/include
+/demos
+
+# autoload
+/autoload/local
+/autoload/my_scripts
+/autoload/Base karaoke Lines.lua
+/autoload/kara-templater.lua
+/autoload/origin_test.lua
+/autoload/Style Setting.lua
+/autoload/test.lua
+/autoload/test copy.lua
+/autoload/kara-templater_file-parser.lua
