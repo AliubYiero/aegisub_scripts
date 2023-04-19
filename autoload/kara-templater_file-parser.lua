@@ -2,7 +2,20 @@ local tr = aegisub.gettext
 local script_name = tr "Apply Karaoke Template File Parser"
 local script_description = tr "通过文件热重载加载的卡拉OK执行器"
 local script_author = "Yiero"
-local script_version = "1.0.0"
+local script_version = "1.0.1"
+
+--[[
+更新计划：
+1.1.0
+    支持template行的变量记忆和调用
+    （自动remember和recall）
+1.2.0
+    支持Lua语句解析的template
+...
+    1. 跨行template的解析（暂时没有好思路）
+    2. 单文件多组件的解析（有点思路）
+        （通过template#1等标识语句分割）
+--]]
 
 -- 引入卡拉OK执行器
 require('./kara-templater')
@@ -116,11 +129,11 @@ function re_macro_apply_templates(subs, selected_lines)
             local effect_area_start = false
             local effect_area_end = true
             lines = table.filter(lines, function(line)
-                if line:match("{") then
+                if line:match("^{") then
                     effect_area_start = true
                     effect_area_end = false
                     return true
-                elseif line:match("}") then
+                elseif line:match("^}") then
                     effect_area_start = false
                     effect_area_end = true
                     return true
@@ -138,6 +151,11 @@ function re_macro_apply_templates(subs, selected_lines)
                     -- 没有获取到特效标签声明（反斜杠），添加反斜杠
                     if not effect_tag:match("\\") then
                         effect_tag = "\\" .. effect_tag
+                    end
+
+                    -- 解析内联函数
+                    if (effect_tag:match("%${(.-)}")) then
+                        effect_tag = effect_tag:gsub("%${(.-)}", "!%1!")
                     end
 
                     return effect_tag
