@@ -10,8 +10,9 @@ require('./kara-templater')
 -- 用户配置
 local user_config = {
     -- 是否显示注释到字幕编辑栏中：`true`为显示 | `false`为不显示
-    display_comment = not false,
+    display_comment = false,
 }
+
 
 function re_macro_apply_templates(subs, selected_lines)
     printf = aegisub.debug.out
