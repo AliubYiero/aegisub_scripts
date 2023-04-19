@@ -2,7 +2,7 @@ local tr = aegisub.gettext
 local script_name = tr "Apply Karaoke Template File Parser"
 local script_description = tr "通过文件热重载加载的卡拉OK执行器"
 local script_author = "Yiero"
-local script_version = "1.0.1"
+local script_version = "1.0.2"
 
 --[[
 更新计划：
@@ -15,6 +15,9 @@ local script_version = "1.0.1"
     1. 跨行template的解析（暂时没有好思路）
     2. 单文件多组件的解析（有点思路）
         （通过template#1等标识语句分割）
+
+Bugs：
+    1. 引入卡拉OK执行器时会再次注册一次脚本
 --]]
 
 -- 引入卡拉OK执行器
@@ -27,11 +30,11 @@ local user_config = {
 }
 
 
-function re_macro_apply_templates(subs, selected_lines)
+local function re_macro_apply_templates(subs, selected_lines)
     printf = aegisub.debug.out
     --- 获取字幕对话行开始行编号
     --- @return number dialogue_start_index|字幕对话行开始行编号
-    function get_dialogue_start_index()
+    local function get_dialogue_start_index()
         for i = 1, #subs do
             local line = subs[i]
             if line.class == "dialogue" then
@@ -43,7 +46,7 @@ function re_macro_apply_templates(subs, selected_lines)
     --- 读取文件
     --- @param file_path string 文件路径
     --- @return table lines|包含文件中所有行的数据
-    function read_file(file_path)
+    local function read_file(file_path)
         if file_path:match("^@") then
             file_path = file_path:gsub("^@", aegisub.decode_path("?user") .. "\\automation\\src")
         end
@@ -67,7 +70,7 @@ function re_macro_apply_templates(subs, selected_lines)
     --- @param data.display_comment boolean 显示注释
     --- @param data.lines table 包含文件所有行的表
     --- @return string 解析处理完的代码文本
-    function parse_line(data)
+    local function parse_line(data)
         local effect = data.effect
         local display_comment = data.display_comment
         local lines = data.lines
@@ -103,7 +106,7 @@ function re_macro_apply_templates(subs, selected_lines)
         end
 
         --- 解析code行
-        function parse_code(data)
+        local function parse_code(data)
             local display_comment = data.display_comment
             local lines = data.lines
 
@@ -122,7 +125,7 @@ function re_macro_apply_templates(subs, selected_lines)
         end
 
         --- 解析template行
-        function parse_template(data)
+        local function parse_template(data)
             local display_comment = data.display_comment
             local lines = data.lines
 
@@ -155,7 +158,21 @@ function re_macro_apply_templates(subs, selected_lines)
 
                     -- 解析内联函数
                     if (effect_tag:match("%${(.-)}")) then
-                        effect_tag = effect_tag:gsub("%${(.-)}", "!%1!")
+                        effect_tag = effect_tag:gsub("%${(.-)}", function(e)
+                            -- 内联函数变量解析，自动转化remember
+                            if e:match("=") then
+                                local key, value = e:gsub(" ", ""):match("^(.-)=(.*)$")
+                                mem_remember[key] = true     -- 写入remember缓存
+                                e = string.format("remember(\"%s\", %s)", key, value)   -- 写入remember
+                            end
+
+                            -- 识别缓存remember，自动转化recall
+                            if mem_remember[e] then
+                                e = string.format("recall.%s", e)   -- 写入remember
+                            end
+
+                            return "!".. e .. "!"
+                        end)
                     end
 
                     return effect_tag
@@ -197,6 +214,7 @@ function re_macro_apply_templates(subs, selected_lines)
 
     --- 开始遍历字幕行
     local dialogue_start_index = get_dialogue_start_index()
+    mem_remember = {}
     for i = dialogue_start_index, #subs do
         local line = subs[i]
 
@@ -207,9 +225,9 @@ function re_macro_apply_templates(subs, selected_lines)
             data.lines = read_file(file_path)
 
             -- 读取声明类型
-            if line.effect:match("^code") then
+            if line.comment and line.effect:match("^code") then
                 data.effect = "code"
-            elseif line.effect:match("^template") then
+            elseif line.comment and line.effect:match("^template") then
                 data.effect = "template"
             end
         end
