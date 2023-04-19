@@ -2,13 +2,17 @@ local tr = aegisub.gettext
 local script_name = tr "Apply Karaoke Template File Parser"
 local script_description = tr "通过文件热重载加载的卡拉OK执行器"
 local script_author = "Yiero"
-local script_version = "1.0.2"
+local script_version = "1.1.0"
 
 --[[
-更新计划：
+更新日志
 1.1.0
     支持template行的变量记忆和调用
     （自动remember和recall）
+--]]
+
+--[[
+更新计划：
 1.2.0
     支持Lua语句解析的template
 ...
