@@ -2,28 +2,33 @@ local tr = aegisub.gettext
 local script_name = tr "Apply Karaoke Template File Parser"
 local script_description = tr "通过文件热重载加载的卡拉OK执行器"
 local script_author = "Yiero"
-local script_version = "1.1.0"
+local script_version = "1.1.1"
 
 --[[
 更新日志
 1.1.0
     支持template行的变量记忆和调用
     （自动remember和recall）
+1.1.1
+    修复卡拉OK执行器重复注册的问题
 --]]
 
 --[[
 更新计划：
 1.2.0
-    支持Lua语句解析的template
+    支持Lua语句解析的template（无思路）
 ...
     1. 跨行template的解析（暂时没有好思路）
     2. 单文件多组件的解析（有点思路）
         （通过template#1等标识语句分割）
+    3. 模块化构造模板（配置中心、多组件结构链接...）
 
-Bugs：
-    1. 引入卡拉OK执行器时会再次注册一次脚本
 --]]
 
+-- 修改注册函数`aegisub.register_macro`指向，防止卡拉OK执行器的重复注册
+local register_macro = aegisub.register_macro
+local register_filter = aegisub.register_filter
+aegisub.register_macro = function()  end
 -- 引入卡拉OK执行器
 require('./kara-templater')
 
@@ -248,7 +253,7 @@ local function re_macro_apply_templates(subs, selected_lines)
     macro_apply_templates(subs, selected_lines)
 end
 
-aegisub.register_macro(script_name, script_description, re_macro_apply_templates, macro_can_template)
+register_macro(script_name, script_description, re_macro_apply_templates, macro_can_template)
 
 
 
