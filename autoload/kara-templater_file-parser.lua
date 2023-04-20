@@ -2,7 +2,16 @@ local tr = aegisub.gettext
 local script_name = tr "Apply Karaoke Template File Parser"
 local script_description = tr "通过文件热重载加载的卡拉OK执行器"
 local script_author = "Yiero"
-local script_version = "1.2.2"
+local script_version = "1.2.3"
+
+
+-- 用户配置
+local user_config = {
+    -- 是否显示注释到字幕编辑栏中：`true`为显示 | `false`为不显示
+    display_comment = false,
+}
+
+------------------------------------------------------------------------
 
 --[[
 更新日志
@@ -33,16 +42,11 @@ local script_version = "1.2.2"
 local register_macro = aegisub.register_macro
 local register_filter = aegisub.register_filter
 aegisub.register_macro = function()
+
 end
 -- 引入卡拉OK执行器
 require('./kara-templater')
-util = require 'aegisub.util'
 
--- 用户配置
-local user_config = {
-    -- 是否显示注释到字幕编辑栏中：`true`为显示 | `false`为不显示
-    display_comment = false,
-}
 
 local function re_macro_apply_templates(subs, selected_lines)
     --- 重定向输出语句
@@ -114,10 +118,12 @@ local function re_macro_apply_templates(subs, selected_lines)
             -- 剪切首尾空白
             line = line:match("^ -(.*) *$")
 
-            -- 忽略声明行
+            -- 忽略模块声明行
             if line:match("^%-%- ?#") then
                 line = line:match("^%-%- ?(#.*)$")
             end
+
+            -- 检测模块使用
             if (line:match("^#") and file_info.module == line) then
                 insert_start = true
                 goto continue
@@ -130,6 +136,8 @@ local function re_macro_apply_templates(subs, selected_lines)
             if insert_start then
                 table.insert(lines, line)
             end
+
+
             :: continue ::
         end
 
@@ -224,7 +232,7 @@ local function re_macro_apply_templates(subs, selected_lines)
             local effect_area_end = true        -- 特效区结束标记
             local long_comment_start = false    -- 长注释开始标记
             lines = table.filter(lines, function(line)
-                -- 特效区标记
+                --- 特效区标记
                 if (line:match("^{") or line:match("{$")) then
                     effect_area_start = true
                     effect_area_end = false
@@ -235,7 +243,7 @@ local function re_macro_apply_templates(subs, selected_lines)
                     return "}"
                 end
 
-                -- 长注释标记
+                --- 长注释标记
                 if (line:match('%-%-%[=-%[')) then
                     long_comment_start = true
                     return false
@@ -244,7 +252,7 @@ local function re_macro_apply_templates(subs, selected_lines)
                     return false
                 end
 
-                --  特效标签区，处理反斜杠标记和文本标记
+                ---  特效标签区，处理反斜杠标记和文本标记
                 if effect_area_start and not effect_area_end then
                     local effect_tag = line:match("\"(.-)\"")
 
@@ -280,24 +288,24 @@ local function re_macro_apply_templates(subs, selected_lines)
                     return effect_tag
                 end
 
-                -- 忽略长注释
+                --- 忽略长注释
                 if (long_comment_start) then
                     return false
                 end
 
-                -- 处理文本和函数
+                --- 处理文本和函数
                 if line:match("^\".-\"$") then
-                    -- 文本处理
+                    --- 文本处理
                     return line:match("\"(.-)\"")
 
                 elseif line:match('^%-%-') then
-                    -- 短注释处理
+                    --- 短注释处理
                     if not display_comment then
                         return false
                     end
                     return "{Comment: " .. line:match('%-%-(.*)'):gsub("^ *", "") .. "}"
                 else
-                    -- 函数处理
+                    --- 函数处理
                     return "!" .. line .. "!"
                 end
 
@@ -306,7 +314,7 @@ local function re_macro_apply_templates(subs, selected_lines)
             return lines
         end
 
-        -- 判断模板声明
+        --- 判断模板声明
         local line_tbl  -- 处理完的代码行表
         local sep       -- 分割符
         if effect == "code" then
@@ -317,7 +325,7 @@ local function re_macro_apply_templates(subs, selected_lines)
             sep = ""
         end
 
-        -- 返回处理完毕的文本，清除换行符
+        --- 返回处理完毕的文本，清除换行符
         return table.concat(line_tbl, sep):gsub("\t", ""):gsub("    ", "")
     end
 
