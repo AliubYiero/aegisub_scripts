@@ -2,7 +2,7 @@ local tr = aegisub.gettext
 local script_name = tr "Apply Karaoke Template File Parser"
 local script_description = tr "通过文件热重载加载的卡拉OK执行器"
 local script_author = "Yiero"
-local script_version = "1.1.1"
+local script_version = "1.2.0"
 
 --[[
 更新日志
@@ -11,26 +11,29 @@ local script_version = "1.1.1"
     （自动remember和recall）
 1.1.1
     修复卡拉OK执行器重复注册的问题
+1.2.0
+    支持单文件多组件的解析，通过`#`分割语句
 --]]
 
 --[[
 更新计划：
-1.2.0
-    支持Lua语句解析的template（无思路）
+
 ...
-    1. 跨行template的解析（暂时没有好思路）
-    2. 单文件多组件的解析（有点思路）
+    1. （实现）跨行template的解析（暂时没有好思路）
+    2. （实现）单文件多组件的解析（有点思路）
         （通过template#1等标识语句分割）
     3. 模块化构造模板（配置中心、多组件结构链接...）
-
+    4. 支持Lua语句解析的template（无思路）
 --]]
 
 -- 修改注册函数`aegisub.register_macro`指向，防止卡拉OK执行器的重复注册
 local register_macro = aegisub.register_macro
 local register_filter = aegisub.register_filter
-aegisub.register_macro = function()  end
+aegisub.register_macro = function()
+end
 -- 引入卡拉OK执行器
 require('./kara-templater')
+util = require 'aegisub.util'
 
 -- 用户配置
 local user_config = {
@@ -38,9 +41,10 @@ local user_config = {
     display_comment = false,
 }
 
-
 local function re_macro_apply_templates(subs, selected_lines)
+    --- 重定向输出语句
     printf = aegisub.debug.out
+
     --- 获取字幕对话行开始行编号
     --- @return number dialogue_start_index|字幕对话行开始行编号
     local function get_dialogue_start_index()
@@ -52,20 +56,77 @@ local function re_macro_apply_templates(subs, selected_lines)
         end
     end
 
-    --- 读取文件
-    --- @param file_path string 文件路径
-    --- @return table lines|包含文件中所有行的数据
-    local function read_file(file_path)
-        if file_path:match("^@") then
-            file_path = file_path:gsub("^@", aegisub.decode_path("?user") .. "\\automation\\src")
+    --- 获取文件路径
+    --- @param str string 包含文件路径的字符串
+    --- @return table 包含文件路径`.path`、文件模块`.module`、文件名`.name`的表
+    local function get_file_path(str)
+        local file = {}
+
+        -- 获取文件路径
+        file.path = str:match('^%[file://(.*)%]$')
+        -- 清除文件后缀
+        file.path = file.path:gsub("%.%w-$", "")
+
+        -- 特殊路径重定向 | 将@重定向至 `./automation/src`
+        if file.path:match("^@") then
+            file.path = file.path:gsub("^@", aegisub.decode_path("?user") .. "\\automation\\src")
         end
-        local file = io.open(file_path)
+
+        -- 特殊模块重定向
+        if file.path:match("#[^\\/]-$") then
+            file.path, file.module = file.path:match("^(.-)(#.*)$")
+        end
+
+        -- 补全后缀名
+        file.path = file.path .. ".lua"
+        -- 获取文件名
+        file.name = file.path:match("[\\/](.-)$")
+
+        return file
+    end
+
+    --- 读取文件
+    --- @param file table 包含文件信息的表
+    --- @param file.path string 文件路径
+    --- @param file.module string 文件模块(如果存在)
+    --- @param file.name string 文件名
+    --- @return table lines|包含文件中所有行的数据
+    local function read_file(file_info)
+        local file = io.open(file_info.path)
+
+        -- 判断是否存在模块
+        local insert_start = true
+        if (file.module) then
+            insert_start = false
+        end
 
         local lines = {}
         for line in file:lines() do
-            if line ~= "" then
+            -- 忽略空白行
+            if line == "" then
+                goto continue
+            end
+
+            -- 剪切首尾空白
+            line = line:match("^ -(.*) *$")
+
+            -- 忽略声明行
+            if line:match("^%-%- ?#") then
+                line = line:match("^%-%- ?(#.*)$")
+            end
+            if (line:match("^#") and file_info.module == line) then
+                insert_start = true
+                goto continue
+            elseif (line:match("^#") and insert_start) then
+                insert_start = false
+                goto continue
+            end
+
+            -- 插入文件行表
+            if insert_start then
                 table.insert(lines, line)
             end
+            ::continue::
         end
 
         file:close()
@@ -141,14 +202,14 @@ local function re_macro_apply_templates(subs, selected_lines)
             local effect_area_start = false
             local effect_area_end = true
             lines = table.filter(lines, function(line)
-                if line:match("^{") then
+                if (line:match("^{") or line:match("{$")) then
                     effect_area_start = true
                     effect_area_end = false
-                    return true
-                elseif line:match("^}") then
+                    return "{"
+                elseif (line:match("^}") or line:match("}$")) then
                     effect_area_start = false
                     effect_area_end = true
-                    return true
+                    return "}"
                 end
 
                 --  特效标签区，处理反斜杠标记和文本标记
@@ -180,7 +241,7 @@ local function re_macro_apply_templates(subs, selected_lines)
                                 e = string.format("recall.%s", e)   -- 写入remember
                             end
 
-                            return "!".. e .. "!"
+                            return "!" .. e .. "!"
                         end)
                     end
 
@@ -188,16 +249,19 @@ local function re_macro_apply_templates(subs, selected_lines)
                 end
 
                 -- 处理文本和函数
-                if line:match("^\".-\"$") then     -- 文本处理
+                if line:match("^\".-\"$") then
+                    -- 文本处理
                     return line:match("\"(.-)\"")
 
-                elseif line:match('^%-%-') then    -- 函数处理
+                elseif line:match('^%-%-') then
+                    -- 注释处理
                     if not display_comment then
                         return false
                     end
                     return "{Comment: " .. line:match('%-%-(.*)'):gsub("^ *", "") .. "}"
 
-                else    -- 函数处理
+                else
+                    -- 函数处理
                     return "!" .. line .. "!"
                 end
 
@@ -230,8 +294,8 @@ local function re_macro_apply_templates(subs, selected_lines)
         -- 读取文件
         local data = {}
         if line.actor:match('^%[file://(.-)%]$') then
-            local file_path = line.actor:match('^%[file://(.-)%]$')
-            data.lines = read_file(file_path)
+            local file = get_file_path(line.actor)
+            data.lines = read_file(file)
 
             -- 读取声明类型
             if line.comment and line.effect:match("^code") then
