@@ -2,7 +2,7 @@ local tr = aegisub.gettext
 local script_name = tr "Apply Karaoke Template File Parser"
 local script_description = tr "通过文件热重载加载的卡拉OK执行器"
 local script_author = "Yiero"
-local script_version = "1.2.0"
+local script_version = "1.2.2"
 
 --[[
 更新日志
@@ -14,6 +14,8 @@ local script_version = "1.2.0"
 1.2.0 & 1.2.1
     支持单文件多组件的解析，通过`#`分割语句
     添加了特效区解析可以使用表命名格式的功能（当前版本只是作为IDE不报错的方案，没有实际用途）
+1.2.2
+    修复了长注释在模板行会被解析为函数的Bug
 --]]
 
 --[[
@@ -70,7 +72,8 @@ local function re_macro_apply_templates(subs, selected_lines)
 
         -- 特殊路径重定向 | 将@重定向至 `./automation/src`
         if file.path:match("^@") then
-            file.path = file.path:gsub("^@", aegisub.decode_path("?user") .. "\\automation\\src")
+            local automation_path = "\\automation\\" .. file.path:match("^@(.-[/\\])")
+            file.path = file.path:gsub("^@.-[/\\]", aegisub.decode_path("?user") .. automation_path)
         end
 
         -- 特殊模块重定向
@@ -127,7 +130,7 @@ local function re_macro_apply_templates(subs, selected_lines)
             if insert_start then
                 table.insert(lines, line)
             end
-            ::continue::
+            :: continue ::
         end
 
         file:close()
@@ -150,6 +153,7 @@ local function re_macro_apply_templates(subs, selected_lines)
         --- @param fn function 过滤判断条件数组，条件为true时(可以是match的文本)返回新数组
         --- @return table 返回的新表
         function table.filter(table, fn)
+            -- 初始化空表
             if not table then
                 return table
             end
@@ -158,7 +162,9 @@ local function re_macro_apply_templates(subs, selected_lines)
             for i = 1, #table do
                 local value = table[i]
                 local is_insert = false
-                if tostring(fn(value)) == "true" then
+                if (not fn(value)) then     -- 无返回值默认值
+                    value = false
+                elseif tostring(fn(value)) == "true" then
                     is_insert = true
                 elseif type(fn(value)) ~= "boolean" then
                     is_insert = true
@@ -182,13 +188,27 @@ local function re_macro_apply_templates(subs, selected_lines)
             local lines = data.lines
 
             -- 注释处理
+            local long_comment_start = false
             if not display_comment then
                 lines = table.filter(lines, function(line)
+                    -- 长注释处理
+                    if (line:match('%-%-%[=-%[')) then
+                        long_comment_start = true
+                        return false
+                    elseif (long_comment_start and line:match('%]=-%]')) then
+                        long_comment_start = false
+                        return false
+                    end
+
+                    -- 短注释处理
                     if line:match('%-%-') then
                         return line:match('^(.-)%-%-.*')
                     end
 
-                    return true
+                    -- 返回非注释文本
+                    if (not long_comment_start) then
+                        return true
+                    end
                 end)
             end
 
@@ -200,9 +220,11 @@ local function re_macro_apply_templates(subs, selected_lines)
             local display_comment = data.display_comment
             local lines = data.lines
 
-            local effect_area_start = false
-            local effect_area_end = true
+            local effect_area_start = false     -- 特效区开始标记
+            local effect_area_end = true        -- 特效区结束标记
+            local long_comment_start = false    -- 长注释开始标记
             lines = table.filter(lines, function(line)
+                -- 特效区标记
                 if (line:match("^{") or line:match("{$")) then
                     effect_area_start = true
                     effect_area_end = false
@@ -211,6 +233,15 @@ local function re_macro_apply_templates(subs, selected_lines)
                     effect_area_start = false
                     effect_area_end = true
                     return "}"
+                end
+
+                -- 长注释标记
+                if (line:match('%-%-%[=-%[')) then
+                    long_comment_start = true
+                    return false
+                elseif (long_comment_start and line:match('%]=-%]')) then
+                    long_comment_start = false
+                    return false
                 end
 
                 --  特效标签区，处理反斜杠标记和文本标记
@@ -249,18 +280,22 @@ local function re_macro_apply_templates(subs, selected_lines)
                     return effect_tag
                 end
 
+                -- 忽略长注释
+                if (long_comment_start) then
+                    return false
+                end
+
                 -- 处理文本和函数
                 if line:match("^\".-\"$") then
                     -- 文本处理
                     return line:match("\"(.-)\"")
 
                 elseif line:match('^%-%-') then
-                    -- 注释处理
+                    -- 短注释处理
                     if not display_comment then
                         return false
                     end
                     return "{Comment: " .. line:match('%-%-(.*)'):gsub("^ *", "") .. "}"
-
                 else
                     -- 函数处理
                     return "!" .. line .. "!"
