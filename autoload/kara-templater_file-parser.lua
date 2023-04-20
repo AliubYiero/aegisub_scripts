@@ -2,7 +2,7 @@ local tr = aegisub.gettext
 local script_name = tr "Apply Karaoke Template File Parser"
 local script_description = tr "通过文件热重载加载的卡拉OK执行器"
 local script_author = "Yiero"
-local script_version = "1.2.3"
+local script_version = "1.2.4"
 
 
 -- 用户配置
@@ -25,6 +25,10 @@ local user_config = {
     添加了特效区解析可以使用表命名格式的功能（当前版本只是作为IDE不报错的方案，没有实际用途）
 1.2.2
     修复了长注释在模板行会被解析为函数的Bug
+1.2.3
+    修改了一些注释描述，调整了用户配置的位置
+1.2.4
+    修复了内联函数变量无法使用代码区的问题：即`${num+100}`现在可以正常解析为`!recall.num+100!`了
 --]]
 
 --[[
@@ -274,13 +278,16 @@ local function re_macro_apply_templates(subs, selected_lines)
                                 local key, value = e:gsub(" ", ""):match("^(.-)=(.*)$")
                                 mem_remember[key] = true     -- 写入remember缓存
                                 e = string.format("remember(\"%s\", %s)", key, value)   -- 写入remember
+                                return "!" .. e .. "!"
                             end
 
                             -- 识别缓存remember，自动转化recall
-                            if mem_remember[e] then
-                                e = string.format("recall.%s", e)   -- 写入remember
+                            for var in e:gmatch("%w+") do
+                                if mem_remember[var] then
+                                    -- 写入remember
+                                    e = e:gsub(var, string.format("recall.%s", var))
+                                end
                             end
-
                             return "!" .. e .. "!"
                         end)
                     end
