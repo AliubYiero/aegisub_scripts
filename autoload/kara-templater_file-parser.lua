@@ -2,7 +2,7 @@ local tr = aegisub.gettext
 local script_name = tr "Apply Karaoke Template File Parser"
 local script_description = tr "通过文件热重载加载的卡拉OK执行器"
 local script_author = "Yiero"
-local script_version = "1.2.4"
+local script_version = "1.2.5"
 
 
 -- 用户配置
@@ -14,21 +14,23 @@ local user_config = {
 ------------------------------------------------------------------------
 
 --[[
-更新日志
-1.1.0
-    支持template行的变量记忆和调用
-    （自动remember和recall）
-1.1.1
-    修复卡拉OK执行器重复注册的问题
+更新日志:
+1.2.5
+    添加了一个特殊文件路径`@template`，表示`./automation/src/template`
+1.2.4
+    修复了内联函数变量无法使用代码区的问题：即`${num+100}`现在可以正常解析为`!recall.num+100!`了
+1.2.3
+    修改了一些注释描述，调整了用户配置的位置
+1.2.2
+    修复了长注释在模板行会被解析为函数的Bug
 1.2.0 & 1.2.1
     支持单文件多组件的解析，通过`#`分割语句
     添加了特效区解析可以使用表命名格式的功能（当前版本只是作为IDE不报错的方案，没有实际用途）
-1.2.2
-    修复了长注释在模板行会被解析为函数的Bug
-1.2.3
-    修改了一些注释描述，调整了用户配置的位置
-1.2.4
-    修复了内联函数变量无法使用代码区的问题：即`${num+100}`现在可以正常解析为`!recall.num+100!`了
+1.1.1
+    修复卡拉OK执行器重复注册的问题
+1.1.0
+    支持template行的变量记忆和调用
+    （自动remember和recall）
 --]]
 
 --[[
@@ -54,7 +56,7 @@ require('./kara-templater')
 
 local function re_macro_apply_templates(subs, selected_lines)
     --- 重定向输出语句
-    printf = aegisub.debug.out
+    local printf = aegisub.debug.out
 
     --- 获取字幕对话行开始行编号
     --- @return number dialogue_start_index|字幕对话行开始行编号
@@ -78,13 +80,22 @@ local function re_macro_apply_templates(subs, selected_lines)
         -- 清除文件后缀
         file.path = file.path:gsub("%.%w-$", "")
 
-        -- 特殊路径重定向 | 将@重定向至 `./automation/src`
+        -- 特殊路径重定向
+        -- 将 `@` 重定向至 `./automation/`
+        -- 将 `@src`|`@includes` 重定向至 `./automation/src` | `./automation/includes` 等路径
+        -- 将 `@template` 重定向至 `./automation/src/template`
         if file.path:match("^@") then
-            local automation_path = "\\automation\\" .. file.path:match("^@(.-[/\\])")
+            -- 获取特殊路径
+            local sp_path = file.path:match("^@(.-[/\\])")
+            -- 特殊路径 `@template` 特殊处理
+            if (sp_path == "") then sp_path = "src\\template" end
+            -- 写入相对文件路径
+            local automation_path = "\\automation\\" .. sp_path
+            -- 写入绝对文件路径
             file.path = file.path:gsub("^@.-[/\\]", aegisub.decode_path("?user") .. automation_path)
         end
 
-        -- 特殊模块重定向
+        -- 文件内模块重定向
         if file.path:match("#[^\\/]-$") then
             file.path, file.module = file.path:match("^(.-)(#.*)$")
         end
