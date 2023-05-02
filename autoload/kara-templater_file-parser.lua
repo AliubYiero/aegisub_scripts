@@ -2,7 +2,7 @@ local tr = aegisub.gettext
 local script_name = tr "Apply Karaoke Template File Parser"
 local script_description = tr "通过文件热重载加载的卡拉OK执行器"
 local script_author = "Yiero"
-local script_version = "1.2.6"
+local script_version = "1.3.7"
 
 
 -- 用户配置
@@ -15,6 +15,12 @@ local user_config = {
 
 --[[
 更新日志:
+1.3.7
+    添加功能：在template行的解析中添加了一个`require`关键字，和文件路径的解析一样，可以在文件中引入code模块。
+    默认无路径只有文件名的解析路径是`./automation/src/template/code`
+
+    由于操作了字幕行（添加和删除require依赖），为了优化性能，所以fx行的删除会在本插件中进行。
+    如果您没有对原生`kara-templater`进行修改，那么本插件对于fx行的删除同时也会优化原生`kara-templater`的性能。
 1.2.7
     修复了当特效标签中存在反斜杠时（比如 `t(0,1000,\fsc150)` ），不会自动添加反斜杠的问题。现在能够正确识别了。
 1.2.5 & 1.2.6
@@ -58,7 +64,13 @@ require('./kara-templater')
 
 local function re_macro_apply_templates(subs, selected_lines)
     --- 重定向输出语句
-    local printf = aegisub.debug.out
+    local printf = function(...)
+        local str = ''
+        for i, value in pairs({ ... }) do
+            str = str .. tostring(value) .. "\t"
+        end
+        aegisub.debug.out(str .. "\n")
+    end
 
     --- 获取字幕对话行开始行编号
     --- @return number dialogue_start_index|字幕对话行开始行编号
@@ -75,52 +87,52 @@ local function re_macro_apply_templates(subs, selected_lines)
     --- @param str string 包含文件路径的字符串
     --- @return table 包含文件路径`.path`、文件模块`.module`、文件名`.name`的表
     local function get_file_path(str)
-        local file = {}
+        local file_info = {}
 
         -- 获取文件路径
-        file.path = str:match('^%[file://(.*)%]$')
+        file_info.path = str:match('^%[file://(.*)%]$')
         -- 清除文件后缀
-        file.path = file.path:gsub("%.%w-$", "")
+        file_info.path = file_info.path:gsub("%.%w-$", "")
 
         -- 特殊路径重定向
         -- 将 `@` 重定向至 `./automation/`
         -- 将 `@src`|`@includes` 重定向至 `./automation/src` | `./automation/includes` 等路径
         -- 将 `@template` 重定向至 `./automation/src/template`
-        if file.path:match("^@") then
+        if file_info.path:match("^@") then
             -- 获取特殊路径
-            local sp_path = file.path:match("^@(.-)[/\\]")
+            local sp_path = file_info.path:match("^@(.-)[/\\]")
             -- 特殊路径 `@template` 特殊处理
             if (sp_path == "template") then sp_path = "src\\template\\" end
             -- 写入相对文件路径
             local automation_path = "\\automation\\" .. sp_path .. "\\"
             -- 写入绝对文件路径
-            file.path = file.path:gsub("^@.-[/\\]", aegisub.decode_path("?user") .. automation_path)
+            file_info.path = file_info.path:gsub("^@.-[/\\]", aegisub.decode_path("?user") .. automation_path)
         end
 
         -- 文件内模块重定向
-        if file.path:match("#[^\\/]-$") then
-            file.path, file.module = file.path:match("^(.-)(#.*)$")
+        if file_info.path:match("#[^\\/]-$") then
+            file_info.path, file_info.module = file_info.path:match("^(.-)(#.*)$")
         end
 
         -- 补全后缀名
-        file.path = file.path .. ".lua"
+        file_info.path = file_info.path .. ".lua"
         -- 获取文件名
-        file.name = file.path:match("[\\/](.-)$")
+        file_info.name = file_info.path:match("[\\/](.-)$")
 
-        return file
+        return file_info
     end
 
     --- 读取文件
-    --- @param file table 包含文件信息的表
-    --- @param file.path string 文件路径
-    --- @param file.module string 文件模块(如果存在)
-    --- @param file.name string 文件名
+    --- @param file_info table 包含文件信息的表
+    --- @param file_info.path string 文件路径
+    --- @param file_info.module string 文件模块(如果存在)
+    --- @param file_info.name string 文件名
     --- @return table lines|包含文件中所有行的数据
     local function read_file(file_info)
         --printf(file_info.path)
         local file = io.open(file_info.path)
         if (not file) then
-            printf("寻找不到文件，请查询是否出现路径错误")
+            printf("寻找不到文件，请查询是否出现路径错误\n" .. "error: file (" .. file_info.path .. ") not found")
             aegisub.cancel()
         end
 
@@ -212,7 +224,7 @@ local function re_macro_apply_templates(subs, selected_lines)
             return new_table
         end
 
-        --- 解析code行
+        --- 解析 code 行
         local function parse_code(data)
             local display_comment = data.display_comment
             local lines = data.lines
@@ -245,7 +257,50 @@ local function re_macro_apply_templates(subs, selected_lines)
             return lines
         end
 
-        --- 解析template行
+        --- 解析 code(require) 行
+        local function parse_require(line)
+            -- 处理文件路径
+            local file_info_relative_string = line:match("require%(['\"](.*)['\"]%)")
+            if (not file_info_relative_string:match("[\\/]")) then
+                file_info_relative_string = string.format("@template/code/%s", file_info_relative_string)
+            end
+            local file_info_string = string.format("[file://%s]", file_info_relative_string)
+
+            -- 获取文件绝对路径
+            local file_info = get_file_path(file_info_string)
+
+            -- 获取文件数据
+            local data = {}
+            data.effect = "code"
+            data.display_comment = user_config.display_comment
+            data.lines = read_file(file_info)
+
+            -- 解析code行
+            local code_line = parse_line(data)
+
+            -- 添加code未定义行
+            local insert_require_line = {
+                ["section"] = "[Events]",
+                ["class"] = "dialogue",
+                ["start_time"] = 0,
+                ["end_time"] = 0,
+                ["text"] = code_line,
+                ["comment"] = true,
+                ["actor"] = string.format("[require://%s]", file_info_relative_string),
+                ["effect"] = "code once",
+                ["style"] = "Default",
+                ["layer"] = 0,
+                ["margin_t"] = 0,
+                ["margin_r"] = 0,
+                ["margin_l"] = 0,
+                ["margin_b"] = 0,
+                ["raw"] = string.format("Comment: 0,0:00:00.00,0:00:00.00,Default,[require://%s],0,0,0,code once,%s", file_info_relative_string, code_line),
+                ["extra"] = {}
+            }
+            table.insert(insert_require_line_list, insert_require_line)
+        end
+
+        --- 解析 template 行
         local function parse_template(data)
             local display_comment = data.display_comment
             local lines = data.lines
@@ -329,6 +384,9 @@ local function re_macro_apply_templates(subs, selected_lines)
                         return false
                     end
                     return "{Comment: " .. line:match('%-%-(.*)'):gsub("^ *", "") .. "}"
+                elseif line:match('require') then
+                    --- 需求依赖解析
+                    parse_require(line)
                 else
                     --- 函数处理
                     return "!" .. line .. "!"
@@ -354,15 +412,33 @@ local function re_macro_apply_templates(subs, selected_lines)
         return table.concat(line_tbl, sep):gsub("\t", ""):gsub("    ", "")
     end
 
+    local function parse_require(dialogue_start_index, insert_require_line_list, remove_line_list)
+        -- 删除require字幕行
+        if (next(remove_line_list)) then
+            subs.delete(remove_line_list)
+        end
+
+        -- 插入require代码行
+        if (next(insert_require_line_list)) then
+            for i = 1, #insert_require_line_list do
+                local insert_line = insert_require_line_list[i]
+                subs.insert(dialogue_start_index, insert_line)
+            end
+        end
+    end
     --- 开始遍历字幕行
-    local dialogue_start_index = get_dialogue_start_index()
-    mem_remember = {}
+    local dialogue_start_index = get_dialogue_start_index()   -- 开始对话行索引 | 赋予全局变量因为需要缓存需要插入的require行索引
+    local remove_line_list = {}         -- 需要删除字幕行索引表
+    mem_remember = {}                   -- 变量缓存 | `mem_remember`缓存的变量通过`recall`调用
+    insert_require_line_list = {}       -- 需要添加require字幕行信息表
     for i = dialogue_start_index, #subs do
         local line = subs[i]
 
         -- 读取文件
         local data = {}
-        if line.actor:match('^%[file://(.-)%]$') then
+        if ( (line.actor:match('^%[require://.-%]$')) or (line.effect == "fx") ) then
+            table.insert(remove_line_list, i)
+        elseif line.actor:match('^%[file://.-%]$') then
             local file = get_file_path(line.actor)
             data.lines = read_file(file)
 
@@ -380,7 +456,11 @@ local function re_macro_apply_templates(subs, selected_lines)
             line.text = parse_line(data)
             subs[i] = line
         end
+
     end
+
+    -- 处理require字幕行 | 删除旧require，添加新require
+    parse_require(dialogue_start_index, insert_require_line_list, remove_line_list)
 
     --- 应用卡拉OK执行器
     macro_apply_templates(subs, selected_lines)
