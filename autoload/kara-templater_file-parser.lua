@@ -2,7 +2,7 @@ local tr = aegisub.gettext
 local script_name = tr "Apply Karaoke Template File Parser"
 local script_description = tr "通过文件热重载加载的卡拉OK执行器"
 local script_author = "Yiero"
-local script_version = "1.2.5"
+local script_version = "1.2.6"
 
 
 -- 用户配置
@@ -15,7 +15,7 @@ local user_config = {
 
 --[[
 更新日志:
-1.2.5
+1.2.5 & 1.2.6
     添加了一个特殊文件路径`@template`，表示`./automation/src/template`
 1.2.4
     修复了内联函数变量无法使用代码区的问题：即`${num+100}`现在可以正常解析为`!recall.num+100!`了
@@ -86,11 +86,11 @@ local function re_macro_apply_templates(subs, selected_lines)
         -- 将 `@template` 重定向至 `./automation/src/template`
         if file.path:match("^@") then
             -- 获取特殊路径
-            local sp_path = file.path:match("^@(.-[/\\])")
+            local sp_path = file.path:match("^@(.-)[/\\]")
             -- 特殊路径 `@template` 特殊处理
-            if (sp_path == "") then sp_path = "src\\template" end
+            if (sp_path == "template") then sp_path = "src\\template\\" end
             -- 写入相对文件路径
-            local automation_path = "\\automation\\" .. sp_path
+            local automation_path = "\\automation\\" .. sp_path .. "\\"
             -- 写入绝对文件路径
             file.path = file.path:gsub("^@.-[/\\]", aegisub.decode_path("?user") .. automation_path)
         end
@@ -115,7 +115,12 @@ local function re_macro_apply_templates(subs, selected_lines)
     --- @param file.name string 文件名
     --- @return table lines|包含文件中所有行的数据
     local function read_file(file_info)
+        --printf(file_info.path)
         local file = io.open(file_info.path)
+        if (not file) then
+            printf("寻找不到文件，请查询是否出现路径错误")
+            aegisub.cancel()
+        end
 
         -- 判断是否存在模块
         local insert_start = true
