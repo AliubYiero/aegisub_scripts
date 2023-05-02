@@ -15,6 +15,8 @@ local user_config = {
 
 --[[
 更新日志:
+1.2.7
+    修复了当特效标签中存在反斜杠时（比如 `t(0,1000,\fsc150)` ），不会自动添加反斜杠的问题。现在能够正确识别了。
 1.2.5 & 1.2.6
     添加了一个特殊文件路径`@template`，表示`./automation/src/template`
 1.2.4
@@ -282,7 +284,7 @@ local function re_macro_apply_templates(subs, selected_lines)
                     end
 
                     -- 没有获取到特效标签声明（反斜杠），添加反斜杠
-                    if not effect_tag:match("\\") then
+                    if not effect_tag:match("^\\") then
                         effect_tag = "\\" .. effect_tag
                     end
 
