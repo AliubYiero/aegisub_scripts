@@ -2,7 +2,7 @@ local tr = aegisub.gettext
 local script_name = tr "Apply Karaoke Template File Parser"
 local script_description = tr "通过文件热重载加载的卡拉OK执行器"
 local script_author = "Yiero"
-local script_version = "1.3.7"
+local script_version = "1.3.8"
 
 
 -- 用户配置
@@ -15,6 +15,10 @@ local user_config = {
 
 --[[
 更新日志:
+1.3.8
+    添加功能：支持更复杂的特效区变量解析。
+    如 `${t2 = t1 + 50}` 能够被解析为 `!remember("t2", recall.t1 + 50)!` 了。
+    在之前的版本会被直接解析为 `!remember("t2", t1 + 50)!` 从而导致模板编译失败。
 1.3.7
     添加功能：在template行的解析中添加了一个`require`关键字，和文件路径的解析一样，可以在文件中引入code模块。
     默认无路径只有文件名的解析路径是`./automation/src/template/code`
