@@ -305,6 +305,17 @@ local function re_macro_apply_templates(subs, selected_lines)
             local display_comment = data.display_comment
             local lines = data.lines
 
+            local function get_recall(string)
+                for var in string:gmatch("%w+") do
+                    --printf(var, string)
+                    if mem_remember[var] then
+                        -- 写入remember
+                        string = string:gsub(var, string.format("recall.%s", var))
+                    end
+                end
+                return string
+            end
+
             local effect_area_start = false     -- 特效区开始标记
             local effect_area_end = true        -- 特效区结束标记
             local long_comment_start = false    -- 长注释开始标记
@@ -349,18 +360,14 @@ local function re_macro_apply_templates(subs, selected_lines)
                             -- 内联函数变量解析，自动转化remember
                             if e:match("=") then
                                 local key, value = e:gsub(" ", ""):match("^(.-)=(.*)$")
-                                mem_remember[key] = true     -- 写入remember缓存
+                                mem_remember[key] = true        -- 写入remember缓存
+                                value = get_recall(value)       -- 写入recall缓存
                                 e = string.format("remember(\"%s\", %s)", key, value)   -- 写入remember
                                 return "!" .. e .. "!"
                             end
 
                             -- 识别缓存remember，自动转化recall
-                            for var in e:gmatch("%w+") do
-                                if mem_remember[var] then
-                                    -- 写入remember
-                                    e = e:gsub(var, string.format("recall.%s", var))
-                                end
-                            end
+                            e = get_recall(e)
                             return "!" .. e .. "!"
                         end)
                     end
