@@ -2,7 +2,7 @@ local tr = aegisub.gettext
 local script_name = tr "Apply Karaoke Template File Parser"
 local script_description = tr "通过文件热重载加载的卡拉OK执行器"
 local script_author = "Yiero"
-local script_version = "1.3.8"
+local script_version = "1.3.9"
 
 
 -- 用户配置
@@ -15,6 +15,9 @@ local user_config = {
 
 --[[
 更新日志:
+1.3.9
+    添加功能：`require`关键字现在可以通过`#module`直接调用本文件的模块
+    添加功能：`require`关键字现在可以通过第二个参数，声明code的类型`once | line | syl`
 1.3.8
     添加功能：支持更复杂的特效区变量解析。
     如 `${t2 = t1 + 50}` 能够被解析为 `!remember("t2", recall.t1 + 50)!` 了。
@@ -96,7 +99,7 @@ local function re_macro_apply_templates(subs, selected_lines)
         -- 获取文件路径
         file_info.path = str:match('^%[file://(.*)%]$')
         -- 清除文件后缀
-        file_info.path = file_info.path:gsub("%.%w-$", "")
+        file_info.path = file_info.path:gsub("%.[%w_]-$", "")
 
         -- 特殊路径重定向
         -- 将 `@` 重定向至 `./automation/`
@@ -262,10 +265,23 @@ local function re_macro_apply_templates(subs, selected_lines)
         end
 
         --- 解析 code(require) 行
-        local function parse_require(line)
+        local function parse_require(line, file_path)
             -- 处理文件路径
-            local file_info_relative_string = line:match("require%(['\"](.*)['\"]%)")
-            if (not file_info_relative_string:match("[\\/]")) then
+            line = line:gsub("require%((['\"].*['\"])%)", "%1")
+            local params_counter = 1
+            local file_info_relative_string
+            local code_param = "once"
+            for value in line:gmatch("['\"](.-)[\"']") do
+                if params_counter == 1 then
+                    file_info_relative_string = value
+                elseif params_counter == 2 then
+                    code_param = value
+                end
+                params_counter = params_counter + 1
+            end
+            if ((not file_info_relative_string:match("[\\/]") and (file_info_relative_string:match("#")))) then
+                file_info_relative_string = string.format("%s%s", file_path, file_info_relative_string)
+            elseif (not file_info_relative_string:match("[\\/]")) then
                 file_info_relative_string = string.format("@template/code/%s", file_info_relative_string)
             end
             local file_info_string = string.format("[file://%s]", file_info_relative_string)
@@ -291,14 +307,14 @@ local function re_macro_apply_templates(subs, selected_lines)
                 ["text"] = code_line,
                 ["comment"] = true,
                 ["actor"] = string.format("[require://%s]", file_info_relative_string),
-                ["effect"] = "code once",
+                ["effect"] = "code " .. code_param,
                 ["style"] = "Default",
                 ["layer"] = 0,
                 ["margin_t"] = 0,
                 ["margin_r"] = 0,
                 ["margin_l"] = 0,
                 ["margin_b"] = 0,
-                ["raw"] = string.format("Comment: 0,0:00:00.00,0:00:00.00,Default,[require://%s],0,0,0,code once,%s", file_info_relative_string, code_line),
+                ["raw"] = string.format("Comment: 0,0:00:00.00,0:00:00.00,Default,[require://%s],0,0,0,code %s,%s", file_info_relative_string, code_param, code_line),
                 ["extra"] = {}
             }
             table.insert(insert_require_line_list, insert_require_line)
@@ -310,7 +326,7 @@ local function re_macro_apply_templates(subs, selected_lines)
             local lines = data.lines
 
             local function get_recall(string)
-                for var in string:gmatch("%w+") do
+                for var in string:gmatch("[%w_]+") do
                     --printf(var, string)
                     if mem_remember[var] then
                         -- 写入remember
@@ -397,9 +413,16 @@ local function re_macro_apply_templates(subs, selected_lines)
                     return "{Comment: " .. line:match('%-%-(.*)'):gsub("^ *", "") .. "}"
                 elseif line:match('require') then
                     --- 需求依赖解析
-                    parse_require(line)
+                    parse_require(line, data.file_path)
                 else
                     --- 函数处理
+                    local functionList = { "ass_color", "aegisub", "util", }
+                    for i = 1, #functionList do
+                        local function_string = functionList[i]
+                        if (line:match("^" .. function_string)) then
+                            line = "_G." .. line
+                        end
+                    end
                     return "!" .. line .. "!"
                 end
 
@@ -451,6 +474,7 @@ local function re_macro_apply_templates(subs, selected_lines)
             table.insert(remove_line_list, i)
         elseif line.actor:match('^%[file://.-%]$') then
             local file = get_file_path(line.actor)
+            data.file_path = line.actor:match('^%[file://(.-)%]$'):gsub("#[%w_]*", "")
             data.lines = read_file(file)
 
             -- 读取声明类型
