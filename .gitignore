@@ -5,9 +5,6 @@
 
 /v4-docs
 /tests
-/src
-/include
-/demos
 
 # autoload
 /autoload/local
