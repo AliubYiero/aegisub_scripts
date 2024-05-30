@@ -1,6 +1,6 @@
 # GUI Generate
 
-该函数库用于解放编写Aeg GUI繁琐的工作，本函数库使用md规范的表格文本形式编写静态Aeg GUI。
+[`GUI_generate`](https://github.com/AliubYiero/aegisub_scripts/tree/master/include/GUI_generate) 函数库用于解放编写Aeg GUI繁琐的工作，本函数库使用md规范的表格文本形式编写静态Aeg GUI。
 
 该函数库将解决您编辑Aeg GUI中的以下问题：
 

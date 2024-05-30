@@ -1,6 +1,6 @@
 # aegisub_scripts
 
-### Yiero's Aegisub插件库
+### [Yiero's Aegisub插件库](https://github.com/AliubYiero/aegisub_scripts/tree/master#yieros-aegisub%E6%8F%92%E4%BB%B6%E5%BA%93)
 
 | autoload                                                     | 功能                                                         | 版本  |
 | ------------------------------------------------------------ | ------------------------------------------------------------ | :---: |
@@ -20,10 +20,8 @@
 ### 如何下载
 
 > - 点击本页面右上角 `[Code]` - `[Download Zip]` 将所有文件拷贝下来之后再选择需要的插件安装.
-> - 通过**油猴插件**独立下载单独文件
 
 ### 如何使用
 
 - `autoload`：该文件夹存放**插件库**，该目录下的 `.lua`文件放置在Aeg安装目录下的 `[./automation/autoload]`下
 - `include`：该文件夹存放**函数库**，该目录下的 `.lua`文件需放置在Aeg安装目录下的 `[./automation/include]`下
-- `docx`：该文件夹存放插件/函数库的说明文档以及测试文件

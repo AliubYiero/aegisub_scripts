@@ -1,6 +1,6 @@
 # Apply Karaoke Template File Parser
 
-`Apply Karaoke Template File Parser`是一个用于将读取文件解析成模板文本，填写在字幕编辑栏，并应用卡拉OK模板的插件。
+[`Apply Karaoke Template File Parser`](https://github.com/AliubYiero/aegisub_scripts/tree/master/autoload/kara-templater_file-parser)是一个用于将读取文件解析成模板文本，填写在字幕编辑栏，并应用卡拉OK模板的插件。
 
 
 

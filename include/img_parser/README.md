@@ -2,7 +2,7 @@
 
 ## 说明
 
-`img_parser` 函数库旨在拓展 Aegisub 的图片渲染功能. 
+[`img_parser`](https://github.com/AliubYiero/aegisub_scripts/tree/master/include/img_parser) 函数库旨在拓展 Aegisub 的图片渲染功能. 
 
 `vsfiltermod` 支持的图片导入 (`\1img`等) 只能传入 `.png` 格式的图片, 并且无法进行图片自适应, 如果字幕绘制的大小超过图片大小, 图片只会重复. 本函数库将解决以下问题. 
 

@@ -1,6 +1,6 @@
 # Actor to Style
 
-该插件用于简化将多人标记说话人的txt文本导入后，需要按照标记的说话人再设置样式的操作。
+[`actor_to_style`](https://github.com/AliubYiero/aegisub_scripts/tree/master/autoload/actor_to_style) 插件用于简化将多人标记说话人的txt文本导入后，需要按照标记的说话人再设置样式的操作。
 
 
 
