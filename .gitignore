@@ -6,6 +6,9 @@
 /v4-docs
 /tests
 
+#img_parser
+include/img_parser/test/imgs/*.png
+
 # autoload
 /autoload/local
 /autoload/my_scripts

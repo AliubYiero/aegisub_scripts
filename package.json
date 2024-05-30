@@ -9,7 +9,8 @@
 		"link append_style_to_text_without_generate": "aeg i \"./autoload/append_style_to_text/append_style_to_text_without_generate.lua\" -w",
 		"link kara-templater": "aeg i \"./autoload/kara-templater/kara-templater.lua\" -w",
 		"link kara-templater_file-parser": "aeg i \"./autoload/kara-templater_file-parser/kara-templater_file-parser.lua\" -w",
-		"link GUI_generate": "aeg i \"./include/GUI_generate/GUI_generate.lua\" -w --util"
+		"link GUI_generate": "aeg i \"./include/GUI_generate/GUI_generate.lua\" -w --util",
+		"link img_parser": "aeg i \"./include/img_parser/img_parser.lua\" -w --util"
 	},
 	"keywords": [],
 	"author": "",
