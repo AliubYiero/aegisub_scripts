@@ -1,0 +1,17 @@
+{
+	"name": "aegisub_scripts",
+	"version": "1.0.0",
+	"description": "Yiero's Aegisub Scripts",
+	"main": "index.js",
+	"scripts": {
+		"link actor_to_style": "aeg i \"./autoload/actor_to_style/actor_to_style.lua\" -w",
+		"link append_style_to_text": "aeg i \"./autoload/append_style_to_text/append_style_to_text.lua\" -w",
+		"link append_style_to_text_without_generate": "aeg i \"./autoload/append_style_to_text/append_style_to_text_without_generate.lua\" -w",
+		"link kara-templater": "aeg i \"./autoload/kara-templater/kara-templater.lua\" -w",
+		"link kara-templater_file-parser": "aeg i \"./autoload/kara-templater_file-parser/kara-templater_file-parser.lua\" -w",
+		"link GUI_generate": "aeg i \"./include/GUI_generate/GUI_generate.lua\" -w --util"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC"
+}
