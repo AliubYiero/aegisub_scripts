@@ -192,4 +192,31 @@ img_parser.resize = function(img_path, re_width, re_height, resize_way)
 	return re_img_path
 end
 
+--- 调用 ImageMagick api 将图片为.png格式
+--- @param img_path string 图片地址, 支持绝对路径和相对路径
+--- @return string 重置大小后的图片地址
+img_parser.to_png = function(img_path)
+	-- 将相对路径转为绝对路径
+	img_path = path_parser.to_absolute(img_path)
+	
+	-- 将图片拓展改为 .png 格式
+	local filename = path_parser.split_basename(img_path) .. '.png'
+	
+	-- 如果已经存在转换过的文件, 直接输出路径
+	if path_parser.exist_file(filename) then
+		return filename
+	end
+	
+	-- 转换图片
+	os.execute(
+		('start /b magick "%s" "%s"'):format(
+			img_path,
+			filename
+		)
+	)
+	
+	-- 返回转换图片路径
+	return filename
+end
+
 return img_parser

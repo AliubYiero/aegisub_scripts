@@ -51,6 +51,28 @@ _G.img_parser.resize(filepath, re_width, re_height, resize_way): re_filepath
 
 
 
+### 图片转化成png格式: `_G.img_parser.to_png`
+
+`_G.img_parser.to_png` 函数接收1个参数, 返回一个字符串: 
+
+```lua
+_G.img_parser.to_png(filepath): re_filepath
+```
+
+**说明**
+
+`_G.img_parser.to_png` 能够将原始图片 (`filepath`) 通过 `ImageMagick` 转化成 `.png` 格式的图片, 使其能够正常被输出. 
+
+> 在运行时, 会一直闪过黑框, 这是 `ImageMagick` 在运行转换图片, 属于正常情况. 
+
+
+
+**参数**
+
+- `filepath`: 原始图片的路径 (**路径中不能存在中文**) .
+
+
+
 ## 安装
 
 1. 电脑安装 [ImageMagick](https://imagemagick.org/) .
