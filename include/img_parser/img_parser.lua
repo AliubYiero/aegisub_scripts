@@ -219,4 +219,23 @@ img_parser.to_png = function(img_path)
 	return filename
 end
 
+--- 获取图片信息
+--- @param img_path string 图片地址, 支持绝对路径和相对路径
+--- @return string, string width, height (图片宽高)
+img_parser.get_size = function(img_path)
+	-- 将相对路径转为绝对路径
+	img_path = path_parser.to_absolute(img_path)
+	
+	-- 读取图像信息
+	--- @type file
+	local file_size = io.popen(('identify -format "%%[fx:w]x%%[fx:h]" %s'):format(img_path))
+	--- @type string `${width: string}x${height: string}`
+	local size = file_size:read('l')
+	file_size:close()
+	
+	-- 获取宽高并输出
+	local width, height = size:match('(%d+)x(%d+)')
+	return width, height
+end
+
 return img_parser

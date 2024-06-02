@@ -13,7 +13,6 @@ PlayResY: 1080
 Video File: ?dummy:30.000000:120000:1920:1080:212:212:212:
 Video AR Value: 1.777778
 Video Zoom Percent: 0.500000
-Active Line: 1
 Video Position: 150
 
 [V4+ Styles]
@@ -25,5 +24,5 @@ Style: TEST,黑体,60,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,10
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-Comment: 0,0:00:00.00,0:00:00.00,Default,强制缩放,0,0,0,template line notext,{\p1\an7\1img(!_G.img_parser.to_png('.\\imgs\\kaofish.jpg')!)}m 0 0 l 1280 0 1280 1280 0 1280
+Comment: 0,0:00:00.00,0:00:00.00,Default,图片格式转png,0,0,0,template line notext,{\p1\an7\1img(!_G.img_parser.to_png('.\\imgs\\kaofish.jpg')!)}m 0 0 l 1280 0 1280 1280 0 1280
 Comment: 0,0:00:05.00,0:00:07.00,Default,,0,0,0,karaoke,

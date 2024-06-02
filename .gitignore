@@ -9,6 +9,11 @@
 #img_parser
 include/img_parser/test/imgs/*.png
 
+# zip file
+**/*.7z
+**/*.zip
+**/*.rar
+
 # autoload
 /autoload/local
 /autoload/my_scripts
