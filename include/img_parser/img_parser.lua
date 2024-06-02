@@ -4,6 +4,13 @@
 --- @version 1.0.0
 --- 遍历数组 tab , 执行回调函数
 
+--- 剪除输入字符串 `str` 的前后的多余空白字符串
+--- @param str string
+--- @return string
+local trim = function(str)
+	return str:gsub('^%s*', ''):gsub('%s*$', '')
+end
+
 --- @param tab table
 --- @param callback function function(item: any, index: number|string):void
 --- @return table 返回的新表
@@ -146,6 +153,19 @@ end
 -------------------------------------img_parser-------------------------------------
 ------------------------------------------------------------------------------------
 local img_parser = {}
+
+--- 向外暴露出命令行, 让用户可以自行执行命令
+--- @param command string
+--- @return string
+img_parser.exec = function(command)
+	-- 执行命令
+	local file = io.popen(command)
+	local result = trim(file:read('a'))
+	file:close()
+	-- 返回命令返回结果
+	return result
+end
+
 --- 调用 ImageMagick api 输出重置大小图片 (并将图片输出为.png格式)
 --- @param img_path string 图片地址, 支持绝对路径和相对路径
 --- @param re_width number 重置的图片宽度
@@ -237,5 +257,6 @@ img_parser.get_size = function(img_path)
 	local width, height = size:match('(%d+)x(%d+)')
 	return width, height
 end
+
 
 return img_parser
