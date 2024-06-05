@@ -218,13 +218,12 @@ img_parser.resize = function(img_path, re_width, re_height, resize_way)
 	end
 	
 	-- 写入重置图片
-	os.execute(
-		('start /b magick "%s" -resize "%sx%s%s" "%s"'):format(
-			img_path,
-			re_width, re_height, resize_way,
-			re_img_path
-		)
-	)
+	img_parser.exec(('start /b magick "%s" -resize "%sx%s%s" "%s"'):format(
+		img_path,
+		re_width, re_height, resize_way,
+		re_img_path
+	))
+	
 	return re_img_path
 end
 
@@ -256,12 +255,10 @@ img_parser.to_png = function(img_path)
 	end
 	
 	-- 转换图片
-	os.execute(
-		('start /b magick "%s" "%s"'):format(
-			img_path,
-			filename
-		)
-	)
+	img_parser.exec(('start /b magick "%s" "%s"'):format(
+		img_path,
+		filename
+	))
 	
 	-- 返回转换图片路径
 	return filename
@@ -287,11 +284,8 @@ img_parser.get_size = function(img_path)
 	
 	--[[ 主体功能 ]]
 	-- 读取图像信息
-	--- @type file
-	local file_size = io.popen(('identify -format "%%[fx:w]x%%[fx:h]" %s'):format(img_path))
 	--- @type string `${width: string}x${height: string}`
-	local size = file_size:read('l')
-	file_size:close()
+	local size = img_parser.exec(('start /b magick identify -format "%%[fx:w]x%%[fx:h]" %s'):format(img_path))
 	
 	-- 获取宽高并输出
 	local width, height = size:match('(%d+)x(%d+)')
