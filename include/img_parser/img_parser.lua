@@ -4,6 +4,8 @@
 --- @version 1.0.0
 --- 遍历数组 tab , 执行回调函数
 
+local unicode = require('aegisub.unicode')
+
 --- 剪除输入字符串 `str` 的前后的多余空白字符串
 --- @param str string
 --- @return string
@@ -42,7 +44,9 @@ local path_parser = {}
 --- @param path string 字符串
 --- @return boolean
 path_parser.validate = function(path)
-	return not path:match('[:%*%?"<>|]')
+	local alpha_validate = not path:match('[%*%?"<>|]')
+	local ascii_validate = #path == unicode.len(path)
+	return alpha_validate and ascii_validate
 end
 
 --- 将路径按照分隔符切割成数组
@@ -173,14 +177,26 @@ end
 --- @param resize_way string 重置大小方式: 'focus' (强制缩放) | 'keep' (保持宽高比(取最长的一边))
 --- @return string 重置大小后的图片地址
 img_parser.resize = function(img_path, re_width, re_height, resize_way)
-	-- 参数归一
-	resize_way = includes({'focus', 'keep'}, resize_way) and resize_way or 'focus'
+	--[[ 参数归一化 ]]
+	-- 转换 resize_way
 	local resize_way_mapper = {
 		focus = '!',
 		keep = '^',
 	}
+	resize_way = includes({'focus', 'keep'}, resize_way) and resize_way or 'focus'
 	resize_way = resize_way_mapper[resize_way]
 	
+	--[[ 异常处理 ]]
+	-- 验证路径合法性
+	if not path_parser.validate(img_path) then
+		error('\n路径出现非法字符: \n  ' .. img_path)
+	end
+	-- 验证图片是否存在
+	if not path_parser.exist_file(img_path) then
+		error('\n原始图片不存在: \n  ' .. img_path)
+	end
+	
+	--[[ 主体功能 ]]
 	-- 获取文件名
 	img_path = path_parser.to_absolute(img_path)
 	local dir, filename = path_parser.split_dir(img_path);
@@ -216,9 +232,21 @@ end
 --- @param img_path string 图片地址, 支持绝对路径和相对路径
 --- @return string 重置大小后的图片地址
 img_parser.to_png = function(img_path)
+	--[[ 参数归一化 ]]
 	-- 将相对路径转为绝对路径
 	img_path = path_parser.to_absolute(img_path)
 	
+	--[[ 异常处理 ]]
+	-- 验证路径合法性
+	if not path_parser.validate(img_path) then
+		error('\n路径出现非法字符: \n  ' .. img_path)
+	end
+	-- 验证图片是否存在
+	if not path_parser.exist_file(img_path) then
+		error('\n原始图片不存在: \n  ' .. img_path)
+	end
+	
+	--[[ 主体功能 ]]
 	-- 将图片拓展改为 .png 格式
 	local filename = path_parser.split_basename(img_path) .. '.png'
 	
@@ -243,9 +271,21 @@ end
 --- @param img_path string 图片地址, 支持绝对路径和相对路径
 --- @return string, string width, height (图片宽高)
 img_parser.get_size = function(img_path)
+	--[[ 参数归一化 ]]
 	-- 将相对路径转为绝对路径
 	img_path = path_parser.to_absolute(img_path)
 	
+	--[[ 异常处理 ]]
+	-- 验证路径合法性
+	if not path_parser.validate(img_path) then
+		error('\n路径出现非法字符: \n  ' .. img_path)
+	end
+	-- 验证图片是否存在
+	if not path_parser.exist_file(img_path) then
+		error('\n原始图片不存在: \n  ' .. img_path)
+	end
+	
+	--[[ 主体功能 ]]
 	-- 读取图像信息
 	--- @type file
 	local file_size = io.popen(('identify -format "%%[fx:w]x%%[fx:h]" %s'):format(img_path))
