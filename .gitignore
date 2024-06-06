@@ -7,7 +7,7 @@
 /tests
 
 #img_parser
-include/img_parser/test/imgs/*.png
+include/img_parser/test/imgs/**/*.png
 
 # zip file
 **/*.7z

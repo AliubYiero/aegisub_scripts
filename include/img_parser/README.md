@@ -6,6 +6,13 @@
 
 `vsfiltermod` 支持的图片导入 (`\1img`等) 只能传入 `.png` 格式的图片, 并且无法进行图片自适应, 如果字幕绘制的大小超过图片大小, 图片只会重复. 本函数库将解决以下问题. 
 
+**功能**
+
+- 任意类型图片转png
+- 缩放图片
+- 获取图片尺寸信息
+- 将gif图片切割成静态帧, 并输出静态图片信息
+
 
 
 ## 使用
@@ -21,11 +28,21 @@
 
 ### 重置图片大小: `_G.img_parser.resize`
 
-`_G.img_parser.resize` 函数接收4个参数, 3个必须参数和1个可选参数, 返回一个字符串: 
+`_G.img_parser.resize` 函数接收4个参数, 返回一个字符串: 
+
+> 按尺寸缩放图片: 
 
 ```lua
 _G.img_parser.resize(filepath, re_width, re_height, resize_way): re_filepath
 ```
+
+> 按百分比缩放图片
+
+```lua
+_G.img_parser.resize(filepath, re_percent): re_filepath
+```
+
+
 
 **说明**
 
@@ -38,7 +55,7 @@ _G.img_parser.resize(filepath, re_width, re_height, resize_way): re_filepath
 
 
 
-**参数**
+**参数1**
 
 - `filepath`: **字符串**参数. 原始图片的路径 (**路径中不能存在中文**) .
 
@@ -46,11 +63,19 @@ _G.img_parser.resize(filepath, re_width, re_height, resize_way): re_filepath
 - `re_height`: **数字**参数. 重新输出的图片的高度. 
 - `resize_way`: *可选**字符串**参数*. 接受两个字符串值: `'focus'` 和 `'keep'`. 如果不填或者不是这两个字符串, 默认为 `'focus'`
 
-> - `'focus'`: 
+> - `'focus'`: 硬重置. 
 >   强制重置大小为 $(re\_width \times re\_height)$.
-> - `'keep'`: 
+> - `'keep'`: 软重置. 
 >   保持图片长宽高(以最大的长度进行缩放). 
 >   比如, 如果 `re_width` 大于 `re_height`, 则重新输出的大小为: $(re\_width \times re\_width \cdot \frac{width}{height})$
+
+
+
+**参数2**
+
+- `filepath`: **字符串**参数. 原始图片的路径 (**路径中不能存在中文**) .
+
+- `re_percent`: **数字**参数. 重新输出的图片相对于图片的**缩放百分比**. 
 
 
 
@@ -62,16 +87,36 @@ _G.img_parser.resize(filepath, re_width, re_height, resize_way): re_filepath
 
 **示例**
 
-> 假定当前ass文件的路径为: `'D:/subtitle/img_to_png.ass'`
-> 假定有一张图片的储存路径为: `'./imgs/kaofish.jpg'`
+> 假定当前ass文件的路径为: `'D:/subtitle/img_resize.ass'`
+> 假定有一张图片的储存路径为: `'./imgs/kaofish.jpg'`, 其尺寸为 *1280x1280* .
 
 ```lua
-re_filepath = _G.img_parser.resize('./imgs/kaofish.jpg', 50, 50)
+-- 按尺寸缩放 (强制缩放图片为 50x60 )
+re_filepath = _G.img_parser.resize('./imgs/kaofish.jpg', 50, 60)
 print(re_filepath)
--- -> 'D:\subtitle\imgs\kaofish(50x50!).png'
+-- -> 'D:\subtitle\imgs\kaofish(50x60!).png'
+-- 重置后的图片的实际尺寸为 50x60
+```
+
+```lua
+-- 按尺寸缩放 (软缩放图片为 1920x1080 )
+re_filepath = _G.img_parser.resize('./imgs/kaofish.jpg', 1920, 1080)
+print(re_filepath)
+-- -> 'D:\subtitle\imgs\kaofish(1920x1080^).png'
+-- 重置后的图片的实际尺寸为 1080x1080 
+```
+
+```lua
+-- 按百分比缩放 (缩小为原来的 50% )
+re_filepath = _G.img_parser.resize('./imgs/kaofish.jpg', 50)
+print(re_filepath)
+-- -> 'D:\subtitle\imgs\kaofish(50%).png'
+-- 重置后的图片的实际尺寸为 640x640
 ```
 
 
+
+---
 
 ### 图片转化成png格式: `_G.img_parser.to_png`
 
@@ -95,8 +140,6 @@ _G.img_parser.to_png(filepath): re_filepath
 
 - `filepath`: **字符串**参数. 原始图片的路径 (**路径中不能存在中文**) .
 
-
-
 **返回值**
 
 - `re_filepath`: **字符串**返回值. 表示转换后的**图片路径**. 
@@ -116,7 +159,7 @@ print(re_filepath)
 
 
 
-
+---
 
 ### 输出图片信息: `_G.img_parser.get_size`
 
@@ -138,8 +181,6 @@ _G.img_parser.get_size(filepath): width, height
 
 - `filepath`: **字符串**参数. 原始图片的路径 (**路径中不能存在中文**) .
 
-
-
 **返回值**
 
 - `width`: **字符串**返回值. 表示图片的**宽度**.
@@ -149,15 +190,127 @@ _G.img_parser.get_size(filepath): width, height
 
 **示例**
 
-> 假定有一张图片的储存路径为: `'./imgs/kaofish.jpg'` , 尺寸为 宽720 x 高1080 .
+> 假定有一张图片的储存路径为: `'./imgs/kaofish.jpg'`, 其尺寸为 *1280x1280* .
 
 ```lua
 width, height = _G.img_parser.get_size('./imgs/kaofish.jpg')
 print(width, height)
--- -> 720 1080
+-- -> 1280 1280
 ```
 
 
+
+---
+
+### 分解 Gif 图片: `_G.img_parser.decompose_gif`
+
+`_G.img_parser.decompose_gif` 函数接收4个**字符串**参数, 有1个**表**返回值: 
+
+> **分解 Gif 图片**并**获取信息**: 
+
+```lua
+_G.img_parser.decompose_gif(filepath): gif_msg_tbl
+```
+
+> 分解 Gif 图片并按**尺寸**缩放图片: 
+
+```lua
+_G.img_parser.decompose_gif(filepath, re_width, re_height, re_way): gif_msg_tbl
+```
+
+> 分解 Gif 图片并按**百分比**缩放图片: 
+
+```lua
+_G.img_parser.decompose_gif(filepath, re_percent): gif_msg_tbl
+```
+
+
+
+**说明**
+
+`_G.img_parser.decompose_gif` 将通过 `ImageMagick` 将原始 Gif 图片 (`filepath`) 拆分成多张静态图片 (`.png` 格式), 并存在在一个文件夹中, 并输出一个包含 Gif 信息的表. 
+
+> 在运行时, 会一直闪过黑框, 这是 `ImageMagick` 在运行, 属于正常情况, 并且由于 Gif 存在多张图片, 转换尺寸的耗时会延长. 
+
+
+
+**参数1**
+
+- `filepath`: **字符串**参数. 原始图片的路径 (**路径中不能存在中文**) .
+
+- `re_width`: **数字**参数. 重新输出的图片的**宽度**. 
+
+- `re_height`: **数字**参数. 重新输出的图片的**高度**. 
+
+- `resize_way`: *可选**字符串**参数*. 接受两个字符串值: `'focus'` 和 `'keep'`. 如果不填或者不是这两个字符串, 默认为 `'focus'`
+
+  > - `'focus'`: 硬重置. 
+  >   强制重置大小为 $(re\_width \times re\_height)$.
+  > - `'keep'`: 软重置. 
+  >   保持图片长宽高(以最大的长度进行缩放). 
+  >   比如, 如果 `re_width` 大于 `re_height`, 则重新输出的大小为: $(re\_width \times re\_width \cdot \frac{width}{height})$
+
+
+
+**参数2**
+
+- `filepath`: **字符串**参数. 原始图片的路径 (**路径中不能存在中文**) .
+
+- `re_percent`: **数字**参数. 重新输出的图片相对于图片的**缩放百分比**. 
+
+
+
+**返回值**
+
+- `gif_msg_tbl`: 一个数值型表: 
+
+  > `gif_info`: 保存分解出来的 Gif 中每张图片的表, 拥有以下属性
+  >
+  > > - `index`: 当前图片位于 Gif 中的第几帧**索引**. (从0开始)
+  > > - `width`: 当前图片的**宽度**. 
+  > > - `height`: 当前图片的**高度**. 
+  > > - `ms`: 当前图片的**持续时间**. (单位ms)
+  > > - `filename`: 分解出来的 `.png` 格式的图片的**地址**. 
+
+
+
+**示例**
+
+> 假定当前ass文件的路径为: `'D:/subtitle/img_decompose_gif.ass'`,
+> 假定有一张图片的储存路径为: `'./imgs/dog.gif'`, 其尺寸为 *200x200* , 有20帧图片, 每帧持续时间为 10ms .
+
+```lua
+-- 分解 Gif 图片
+msg_list = _G.img_parser.decompose_gif('./imgs/dog.gif')
+
+print(#msg_list)
+-- --> 20
+
+first_frame = msg_list[1]
+print(first_frame.width, first_frame.height, first_frame.ms, first_frame.filename)
+-- --> 200 200 10 'D:/subtitle/dog/dog-0.png'
+
+second_frame = msg_list[2]
+print(second_frame.width, second_frame.height, second_frame.ms, second_frame.filename)
+-- --> 200 200 10 'D:/subtitle/dog/dog-1.png'
+```
+
+```lua
+-- 分解 Gif 图片并将其放大 200%
+msg_list = _G.img_parser.decompose_gif('./imgs/dog.gif', 200)
+
+first_frame = msg_list[1]
+print(first_frame.width, first_frame.height, first_frame.ms, first_frame.filename)
+-- --> 400 400 10 'D:/subtitle/dog(200%)/dog-0.png'
+
+second_frame = msg_list[2]
+print(second_frame.width, second_frame.height, second_frame.ms, second_frame.filename)
+-- --> 400 400 10 'D:/subtitle/dog(200%)/dog-1.png'
+```
+
+
+
+---
 
 ### 暴露出命令行接口: `_G.img_parser.exec`
 
@@ -184,8 +337,6 @@ result = io.popen(command):read('a')
 **参数**
 
 - `command`: 命令行指令
-
-
 
 **返回值**
 
