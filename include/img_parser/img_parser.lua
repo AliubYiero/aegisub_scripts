@@ -1,7 +1,7 @@
 --- 图片解析函数库
 --- @module img_parser
 --- @author Yiero
---- @version 1.0.0
+--- @version 1.0.7
 --- 遍历数组 tab , 执行回调函数
 
 local unicode = require('aegisub.unicode')

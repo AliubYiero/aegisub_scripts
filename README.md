@@ -12,10 +12,10 @@
 
 ### Yiero's Aegisub函数库
 
-| include                                | 功能                                                         | 版本  |
-| -------------------------------------- | ------------------------------------------------------------ | ----- |
+| include                                | 功能                                                         | 版本    |
+| -------------------------------------- | ------------------------------------------------------------ |-------|
 | [GUI_generate](./include/GUI_generate) | 用于辅助GUI生成的函数库                                      | 1.3.5 |
-| [img_parser](./include/img_parser)     | 用于图片转换的函数库 ( 依赖于 [ImageMagick](https://imagemagick.org/) ) | 1.0.0 |
+| [img_parser](./include/img_parser)     | 用于图片转换的函数库 ( 依赖于 [ImageMagick](https://imagemagick.org/) ) | 1.0.7 |
 
 ### 如何下载
 
