@@ -1,0 +1,18 @@
+{
+  "name": "app_append_style_to_text",
+  "version": "1.0.0",
+  "description": "[`append_style_to_text`](https://github.com/AliubYiero/aegisub_scripts/blob/master/autoload/append_style_to_text) 插件是一个用于将样式文本使用特定修饰，附加在字幕行的插件，可用于多人轴区分说话人.",
+  "main": "main.config.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node main.config.js --watch",
+    "bundle": "node main.config.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "luabundle": "^1.7.0",
+    "radash": "^12.1.0"
+  }
+}
