@@ -5,8 +5,7 @@
 | autoload                                                     | 功能                                                         | 版本  |
 | ------------------------------------------------------------ | ------------------------------------------------------------ | :---: |
 | [actor_to_style](./autoload/actor_to_style)                  | 使用txt导入多人轴，将说话人从说话人栏转移到样式栏            | 1.1.3 |
-| [append_style_to_text](./autoload/append_style_to_text)      | 需要使用 `GUI_generate`函数库<br />将样式添加上规定修饰添加到文本中，并不使原字幕文本发生偏移 | 1.2.5 |
-| [append_style_to_text_without_generate](./autoload/append_style_to_text) | **不需要**使用 `GUI_generate`函数库的 `append_style_with_leading`独立版本<br />但是可能不会和 `append_style_with_leading`同步更新，请查看版本号和更新日志 | 1.2.5 |
+| [append_style_to_text](./autoload/app_1_append_style_to_text)      | 将样式添加上规定修饰添加到文本中，并不使原字幕文本发生偏移 | 1.2.5 |
 | [kara-templater_file-parser](./autoload/kara-templater_file-parser) | 修改 **kara-templater** 的入口，在调用原    **kara-templater** 执行器的基础上，添加了一个读取文件重载代码的功能 | 1.2.3 |
 | [kara-templater](./autoload/kara-templater)                  | 原版 **kara-templater** 修改版                               | 2.1.8 |
 
